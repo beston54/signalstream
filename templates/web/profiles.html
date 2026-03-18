@@ -39,14 +39,26 @@
                         style="width: 100%; padding: 0.6rem; background: #0C1220; border: 1px solid #2A3550; border-radius: 6px; color: #F0F4F8; margin-top: 0.2rem;">
                 </div>
                 <div>
-                    <label style="color: #8899B0; font-size: 0.8rem;">Languages (comma-separated)</label>
-                    <input type="text" name="languages" placeholder="en, de"
-                        style="width: 100%; padding: 0.6rem; background: #0C1220; border: 1px solid #2A3550; border-radius: 6px; color: #F0F4F8; margin-top: 0.2rem;">
+                    <label style="color: #8899B0; font-size: 0.8rem;">Languages</label>
+                    <div class="combobox-container" id="profile-languages-combobox" style="margin-top: 0.2rem;">
+                        <input type="hidden" id="profile-languages" name="languages" value="">
+                        <div class="combobox-input-area" style="background: #0C1220; border: 1px solid #2A3550; border-radius: 6px; min-height: 38px; padding: 4px 8px;">
+                            <div class="combobox-chips" id="profile-languages-chips"></div>
+                            <input type="text" class="combobox-text-input" id="profile-languages-input" placeholder="Type to search..." autocomplete="off" style="font-size: 0.85rem;">
+                        </div>
+                        <div class="combobox-dropdown" id="profile-languages-dropdown"></div>
+                    </div>
                 </div>
                 <div>
                     <label style="color: #8899B0; font-size: 0.8rem;">Regions</label>
-                    <input type="text" name="regions" placeholder="Europe, United States"
-                        style="width: 100%; padding: 0.6rem; background: #0C1220; border: 1px solid #2A3550; border-radius: 6px; color: #F0F4F8; margin-top: 0.2rem;">
+                    <div class="combobox-container" id="profile-regions-combobox" style="margin-top: 0.2rem;">
+                        <input type="hidden" id="profile-regions" name="regions" value="">
+                        <div class="combobox-input-area" style="background: #0C1220; border: 1px solid #2A3550; border-radius: 6px; min-height: 38px; padding: 4px 8px;">
+                            <div class="combobox-chips" id="profile-regions-chips"></div>
+                            <input type="text" class="combobox-text-input" id="profile-regions-input" placeholder="Type to search..." autocomplete="off" style="font-size: 0.85rem;">
+                        </div>
+                        <div class="combobox-dropdown" id="profile-regions-dropdown"></div>
+                    </div>
                 </div>
                 <div>
                     <label style="color: #8899B0; font-size: 0.8rem;">Schedule (cron)</label>
@@ -131,4 +143,205 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+var ISO_LANGUAGES = [
+    {code: "en", label: "English"}, {code: "es", label: "Spanish"}, {code: "fr", label: "French"},
+    {code: "de", label: "German"}, {code: "it", label: "Italian"}, {code: "pt", label: "Portuguese"},
+    {code: "nl", label: "Dutch"}, {code: "ru", label: "Russian"}, {code: "zh", label: "Chinese"},
+    {code: "ja", label: "Japanese"}, {code: "ko", label: "Korean"}, {code: "ar", label: "Arabic"},
+    {code: "hi", label: "Hindi"}, {code: "bn", label: "Bengali"}, {code: "pl", label: "Polish"},
+    {code: "tr", label: "Turkish"}, {code: "vi", label: "Vietnamese"}, {code: "th", label: "Thai"},
+    {code: "sv", label: "Swedish"}, {code: "da", label: "Danish"}, {code: "no", label: "Norwegian"},
+    {code: "fi", label: "Finnish"}, {code: "cs", label: "Czech"}, {code: "ro", label: "Romanian"},
+    {code: "hu", label: "Hungarian"}, {code: "uk", label: "Ukrainian"}, {code: "el", label: "Greek"},
+    {code: "he", label: "Hebrew"}, {code: "id", label: "Indonesian"}, {code: "ms", label: "Malay"},
+    {code: "fa", label: "Persian"}, {code: "ur", label: "Urdu"}, {code: "sw", label: "Swahili"},
+    {code: "tl", label: "Filipino"}, {code: "ca", label: "Catalan"}
+];
+
+var REGIONS = [
+    {code: "North America", label: "North America"}, {code: "South America", label: "South America"},
+    {code: "Europe", label: "Europe"}, {code: "Asia", label: "Asia"},
+    {code: "Africa", label: "Africa"}, {code: "Oceania", label: "Oceania"},
+    {code: "Middle East", label: "Middle East"}, {code: "Southeast Asia", label: "Southeast Asia"},
+    {code: "Central America", label: "Central America"}, {code: "Caribbean", label: "Caribbean"},
+    {code: "United States", label: "United States"}, {code: "United Kingdom", label: "United Kingdom"},
+    {code: "Canada", label: "Canada"}, {code: "Australia", label: "Australia"},
+    {code: "Germany", label: "Germany"}, {code: "France", label: "France"},
+    {code: "Japan", label: "Japan"}, {code: "South Korea", label: "South Korea"},
+    {code: "India", label: "India"}, {code: "Brazil", label: "Brazil"},
+    {code: "Mexico", label: "Mexico"}, {code: "China", label: "China"},
+    {code: "Russia", label: "Russia"}, {code: "Italy", label: "Italy"},
+    {code: "Spain", label: "Spain"}, {code: "Netherlands", label: "Netherlands"},
+    {code: "Sweden", label: "Sweden"}, {code: "Norway", label: "Norway"},
+    {code: "Denmark", label: "Denmark"}, {code: "Finland", label: "Finland"},
+    {code: "Poland", label: "Poland"}, {code: "Turkey", label: "Turkey"},
+    {code: "Israel", label: "Israel"}, {code: "South Africa", label: "South Africa"},
+    {code: "Nigeria", label: "Nigeria"}, {code: "Egypt", label: "Egypt"},
+    {code: "Indonesia", label: "Indonesia"}, {code: "Philippines", label: "Philippines"},
+    {code: "Thailand", label: "Thailand"}, {code: "Vietnam", label: "Vietnam"},
+    {code: "Argentina", label: "Argentina"}, {code: "Colombia", label: "Colombia"},
+    {code: "Chile", label: "Chile"}, {code: "New Zealand", label: "New Zealand"},
+    {code: "Ireland", label: "Ireland"}, {code: "Switzerland", label: "Switzerland"},
+    {code: "Austria", label: "Austria"}, {code: "Belgium", label: "Belgium"},
+    {code: "Portugal", label: "Portugal"}, {code: "Czech Republic", label: "Czech Republic"},
+    {code: "Greece", label: "Greece"}, {code: "Romania", label: "Romania"},
+    {code: "Hungary", label: "Hungary"}, {code: "Ukraine", label: "Ukraine"},
+    {code: "Saudi Arabia", label: "Saudi Arabia"}, {code: "UAE", label: "United Arab Emirates"},
+    {code: "Singapore", label: "Singapore"}, {code: "Malaysia", label: "Malaysia"},
+    {code: "Taiwan", label: "Taiwan"}, {code: "Pakistan", label: "Pakistan"}
+];
+
+function SignalstreamCombobox(containerId, data, hiddenInputId) {
+    var self = this;
+    this.container = document.getElementById(containerId);
+    if (!this.container) return;
+    this.data = data;
+    this.hiddenInput = document.getElementById(hiddenInputId);
+    this.chipsEl = this.container.querySelector('.combobox-chips');
+    this.textInput = this.container.querySelector('.combobox-text-input');
+    this.dropdown = this.container.querySelector('.combobox-dropdown');
+    this.selected = [];
+    this.activeIndex = -1;
+
+    var existing = (this.hiddenInput.value || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    for (var i = 0; i < existing.length; i++) {
+        var val = existing[i];
+        var match = null;
+        for (var j = 0; j < data.length; j++) {
+            if (data[j].code.toLowerCase() === val.toLowerCase() || data[j].label.toLowerCase() === val.toLowerCase()) {
+                match = data[j];
+                break;
+            }
+        }
+        if (match) {
+            this.selected.push(match.code);
+            this._addChip(match.code, match.label);
+        } else if (val) {
+            this.selected.push(val);
+            this._addChip(val, val);
+        }
+    }
+
+    this.container.querySelector('.combobox-input-area').addEventListener('click', function() {
+        self.textInput.focus();
+    });
+
+    this.textInput.addEventListener('input', function() { self._filter(); });
+    this.textInput.addEventListener('focus', function() { self._filter(); });
+
+    this.textInput.addEventListener('keydown', function(e) {
+        var options = self.dropdown.querySelectorAll('.combobox-option');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            self.activeIndex = Math.min(self.activeIndex + 1, options.length - 1);
+            self._highlightOption(options);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            self.activeIndex = Math.max(self.activeIndex - 1, 0);
+            self._highlightOption(options);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (self.activeIndex >= 0 && options[self.activeIndex]) {
+                options[self.activeIndex].click();
+            }
+        } else if (e.key === 'Escape') {
+            self._closeDropdown();
+        } else if (e.key === 'Backspace' && !self.textInput.value && self.selected.length > 0) {
+            self._removeByCode(self.selected[self.selected.length - 1]);
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!self.container.contains(e.target)) {
+            self._closeDropdown();
+        }
+    });
+}
+
+SignalstreamCombobox.prototype._filter = function() {
+    var query = this.textInput.value.toLowerCase();
+    var self = this;
+    var html = '';
+    var count = 0;
+    for (var i = 0; i < this.data.length; i++) {
+        var item = this.data[i];
+        if (this.selected.indexOf(item.code) !== -1) continue;
+        if (query && item.label.toLowerCase().indexOf(query) === -1 && item.code.toLowerCase().indexOf(query) === -1) continue;
+        var codeDisplay = item.code !== item.label ? '<span class="option-code">' + item.code + '</span>' : '';
+        html += '<div class="combobox-option" data-code="' + item.code + '" data-label="' + item.label + '">' + item.label + codeDisplay + '</div>';
+        count++;
+    }
+    this.dropdown.innerHTML = html;
+    this.activeIndex = -1;
+    if (count > 0) {
+        this.dropdown.classList.add('open');
+    } else {
+        this.dropdown.classList.remove('open');
+    }
+    var options = this.dropdown.querySelectorAll('.combobox-option');
+    for (var j = 0; j < options.length; j++) {
+        options[j].addEventListener('click', function() {
+            var code = this.getAttribute('data-code');
+            var label = this.getAttribute('data-label');
+            self._select(code, label);
+        });
+    }
+};
+
+SignalstreamCombobox.prototype._select = function(code, label) {
+    if (this.selected.indexOf(code) !== -1) return;
+    this.selected.push(code);
+    this._addChip(code, label);
+    this._syncHidden();
+    this.textInput.value = '';
+    this._closeDropdown();
+    this.textInput.focus();
+};
+
+SignalstreamCombobox.prototype._addChip = function(code, label) {
+    var self = this;
+    var chip = document.createElement('span');
+    chip.className = 'combobox-chip';
+    chip.setAttribute('data-code', code);
+    chip.innerHTML = label + ' <span class="chip-remove">&times;</span>';
+    chip.querySelector('.chip-remove').addEventListener('click', function(e) {
+        e.stopPropagation();
+        self._removeByCode(code);
+    });
+    this.chipsEl.appendChild(chip);
+};
+
+SignalstreamCombobox.prototype._removeByCode = function(code) {
+    var idx = this.selected.indexOf(code);
+    if (idx !== -1) this.selected.splice(idx, 1);
+    var chip = this.chipsEl.querySelector('[data-code="' + code + '"]');
+    if (chip) chip.remove();
+    this._syncHidden();
+};
+
+SignalstreamCombobox.prototype._syncHidden = function() {
+    this.hiddenInput.value = this.selected.join(', ');
+};
+
+SignalstreamCombobox.prototype._highlightOption = function(options) {
+    for (var i = 0; i < options.length; i++) {
+        options[i].classList.toggle('active', i === this.activeIndex);
+    }
+    if (options[this.activeIndex]) {
+        options[this.activeIndex].scrollIntoView({block: 'nearest'});
+    }
+};
+
+SignalstreamCombobox.prototype._closeDropdown = function() {
+    this.dropdown.classList.remove('open');
+    this.activeIndex = -1;
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    new SignalstreamCombobox('profile-languages-combobox', ISO_LANGUAGES, 'profile-languages');
+    new SignalstreamCombobox('profile-regions-combobox', REGIONS, 'profile-regions');
+});
+</script>
 {% endblock %}

@@ -108,6 +108,7 @@ csrf = CSRFProtect(app)
 # Only exempt the read-only polling endpoint (GET, no state mutation)
 csrf.exempt("api_status")
 csrf.exempt("api_trends")
+csrf.exempt("api_compare_status")
 
 # Rate limiting (Item 11) — prevents API credit abuse
 limiter = Limiter(
@@ -145,6 +146,10 @@ _jobs_lock = threading.Lock()
 _emails_lock = threading.Lock()
 # Thread pool for pipeline jobs (prevents orphaned daemon threads)
 _executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="pipeline")
+
+# In-memory store for compare-and-analyze jobs (keyed by compare_id)
+_compare_jobs: Dict[str, Dict[str, Any]] = {}
+_compare_lock = threading.Lock()
 
 
 def _purge_old_emails() -> int:
@@ -1087,13 +1092,212 @@ def compare_submit():
                 missing.append(topic_a)
             if comparison["b"].get("no_data"):
                 missing.append(topic_b)
-            comparison["delta"] = f"No prior analysis found for: {', '.join(missing)}. Run an analysis first, then return here to compare."
+            comparison["delta"] = f"No prior analysis found for: {', '.join(missing)}."
+            comparison["can_analyze"] = True
 
     except Exception as e:
         logger.error(f"Comparison failed: {e}")
         comparison["delta"] = "Comparison temporarily unavailable."
 
-    return render_template("compare.html", comparison=comparison)
+    return render_template(
+        "compare.html",
+        comparison=comparison,
+        topic_a=topic_a,
+        topic_b=topic_b,
+        time_range=time_range,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Compare & Analyze — live dual-analysis runner
+# ---------------------------------------------------------------------------
+
+@app.route("/compare/analyze", methods=["POST"])
+@limiter.limit("3 per 10 minutes")
+def compare_analyze():
+    """Launch fresh analysis for one or both comparison topics."""
+    topic_a = request.form.get("topic_a", "").strip()
+    topic_b = request.form.get("topic_b", "").strip()
+    time_range = request.form.get("time_range", "month").strip()
+
+    if not topic_a or not topic_b:
+        return redirect(url_for("compare_page"))
+
+    try:
+        config = load_config(str(PROJECT_ROOT / "config.yaml"))
+    except Exception:
+        logger.exception("Config load error")
+        return redirect(url_for("compare_page"))
+
+    compare_id = uuid.uuid4().hex[:12]
+    now = datetime.now().isoformat()
+    entry = {"id": compare_id, "time_range": time_range, "created_at": now}
+
+    for side, topic in [("a", topic_a), ("b", topic_b)]:
+        # Check if this topic already has data
+        trend = get_trend_data(topic, limit=1)
+        if trend:
+            entry[f"job_{side}"] = {
+                "id": None,
+                "topic": topic,
+                "status": "existing",
+                "progress_pct": 100,
+            }
+            continue
+
+        # Create a real analysis job (same pattern as /analyze)
+        phrases = [p.strip() for p in topic.split(",") if p.strip()]
+        job_id = uuid.uuid4().hex[:12]
+        with _jobs_lock:
+            jobs[job_id] = {
+                "id": job_id,
+                "topic": topic,
+                "phrases": phrases,
+                "time_range": time_range,
+                "status": "queued",
+                "phase": "Queued",
+                "progress_pct": 0,
+                "message": "Job queued, starting shortly...",
+                "pdf_path": None,
+                "post_count": 0,
+                "started_at": now,
+                "completed_at": None,
+            }
+            _evict_old_jobs()
+
+        db_save_job({
+            "id": job_id, "topic": topic, "time_range": time_range,
+            "status": "queued", "phase": "Queued", "progress_pct": 0,
+            "message": "Job queued, starting shortly...",
+            "created_at": now,
+        })
+
+        job_config = copy.deepcopy(config)
+        _executor.submit(_run_pipeline, job_id, job_config, phrases, time_range)
+
+        entry[f"job_{side}"] = {
+            "id": job_id,
+            "topic": topic,
+            "status": "queued",
+            "progress_pct": 0,
+        }
+
+    with _compare_lock:
+        _compare_jobs[compare_id] = entry
+
+    return redirect(url_for("compare_status_page", compare_id=compare_id))
+
+
+@app.route("/compare/status/<compare_id>")
+def compare_status_page(compare_id: str):
+    """Render the dual-progress comparison status page."""
+    with _compare_lock:
+        cjob = _compare_jobs.get(compare_id)
+    if not cjob:
+        return redirect(url_for("compare_page"))
+    return render_template("compare_status.html", compare_id=compare_id, cjob=cjob)
+
+
+@app.route("/api/compare-status/<compare_id>")
+def api_compare_status(compare_id: str):
+    """JSON endpoint polled by the compare status page."""
+    with _compare_lock:
+        cjob = _compare_jobs.get(compare_id)
+    if not cjob:
+        return jsonify({"error": "Comparison not found"}), 404
+
+    result = {
+        "status": "running",
+        "job_a": dict(cjob.get("job_a", {})),
+        "job_b": dict(cjob.get("job_b", {})),
+        "comparison": None,
+    }
+
+    # Enrich each side with live job status
+    all_done = True
+    any_error = False
+    for side in ("job_a", "job_b"):
+        info = cjob.get(side, {})
+        job_id = info.get("id")
+        if job_id is None:
+            # Already had existing data
+            result[side]["status"] = "existing"
+            result[side]["progress_pct"] = 100
+            continue
+        with _jobs_lock:
+            live = jobs.get(job_id)
+        if live:
+            result[side]["status"] = live.get("status", "queued")
+            result[side]["progress_pct"] = live.get("progress_pct", 0)
+            result[side]["phase"] = live.get("phase", "")
+            result[side]["message"] = live.get("message", "")
+        if result[side].get("status") not in ("complete", "existing"):
+            all_done = False
+        if result[side].get("status") == "error":
+            any_error = True
+
+    if any_error:
+        result["status"] = "error"
+    elif all_done:
+        result["status"] = "complete"
+        # Build comparison data using same logic as compare_submit
+        comparison = {"a": None, "b": None, "delta": ""}
+        for side_key, side_label in [("job_a", "a"), ("job_b", "b")]:
+            topic = cjob[side_key]["topic"]
+            trend = get_trend_data(topic, limit=1)
+            if trend:
+                entry = trend[0]
+                total = max(entry.get("total_posts", 1), 1)
+                themes = []
+                try:
+                    themes_json = entry.get("themes_json", "[]")
+                    themes_list = json.loads(themes_json) if isinstance(themes_json, str) else themes_json
+                    themes = [t.get("theme", "") for t in themes_list[:3]]
+                except Exception:
+                    pass
+                comparison[side_label] = {
+                    "topic": topic,
+                    "job_id": entry.get("id", ""),
+                    "post_count": entry.get("total_posts", 0),
+                    "community_count": 0,
+                    "positive_pct": round(entry.get("sentiment_positive", 0) / total * 100, 1),
+                    "negative_pct": round(entry.get("sentiment_negative", 0) / total * 100, 1),
+                    "neutral_pct": round(entry.get("sentiment_neutral", 0) / total * 100, 1),
+                    "dominant_emotion": entry.get("dominant_emotion", "neutral"),
+                    "dominant_emotion_pct": entry.get("dominant_emotion_pct", 0),
+                    "themes": themes,
+                }
+            else:
+                comparison[side_label] = {
+                    "topic": topic,
+                    "post_count": 0,
+                    "positive_pct": 0,
+                    "negative_pct": 0,
+                    "neutral_pct": 0,
+                    "dominant_emotion": "unknown",
+                    "dominant_emotion_pct": 0,
+                    "themes": [],
+                }
+
+        a, b = comparison["a"], comparison["b"]
+        if a and b and a.get("post_count") and b.get("post_count"):
+            parts = []
+            pos_diff = a["positive_pct"] - b["positive_pct"]
+            neg_diff = a["negative_pct"] - b["negative_pct"]
+            topic_a_name = cjob["job_a"]["topic"]
+            topic_b_name = cjob["job_b"]["topic"]
+            if abs(pos_diff) > 5:
+                more_pos = topic_a_name if pos_diff > 0 else topic_b_name
+                parts.append(f'"{more_pos}" has {abs(pos_diff):.1f}% more positive sentiment')
+            if abs(neg_diff) > 5:
+                more_neg = topic_a_name if neg_diff > 0 else topic_b_name
+                parts.append(f'"{more_neg}" has {abs(neg_diff):.1f}% more negative sentiment')
+            if a["dominant_emotion"] != b["dominant_emotion"]:
+                parts.append(f'"{topic_a_name}" is predominantly {a["dominant_emotion"]}, while "{topic_b_name}" is {b["dominant_emotion"]}')
+            comparison["delta"] = ". ".join(parts) + "." if parts else "Both topics show similar sentiment patterns."
+        result["comparison"] = comparison
+
+    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------

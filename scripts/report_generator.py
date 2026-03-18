@@ -202,13 +202,20 @@ def _compact_text(value: Any, max_len: int = 150) -> str:
     if len(text) <= max_len:
         return text
 
-    # Try to find the last sentence/clause boundary before the limit
+    # Try to find the last sentence boundary (. ! ?) before the limit
     search_region = text[:max_len]
-    boundary = None
-    for match in re.finditer(r'[.!?;,]\s', search_region):
+    sentence_boundary = None
+    clause_boundary = None
+    for match in re.finditer(r'[.!?]\s', search_region):
         if match.end() > max_len * 0.4:
-            boundary = match.start() + 1  # include the punctuation
+            sentence_boundary = match.start() + 1  # include the punctuation
+    # Fall back to clause boundary (; ,) only if no sentence boundary found
+    if not sentence_boundary:
+        for match in re.finditer(r'[;,]\s', search_region):
+            if match.end() > max_len * 0.4:
+                clause_boundary = match.start() + 1
 
+    boundary = sentence_boundary or clause_boundary
     if boundary and boundary > max_len * 0.4:
         return text[:boundary].strip()
 
@@ -1830,7 +1837,7 @@ def prepare_card_data(
         })
 
     playbook_card = {
-        "intro": _compact_text(recommendations.get('intro_narrative', ''), max_len=200),
+        "intro": _compact_text(recommendations.get('intro_narrative', ''), max_len=250),
         "entries": playbook_entries,
     }
 

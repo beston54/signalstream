@@ -1030,3 +1030,113 @@ main.container {
     animation: reconnect-spin 0.8s linear infinite;
     flex-shrink: 0;
 }
+
+/* ---------- Combobox / Autocomplete ---------- */
+.combobox-container {
+    position: relative;
+}
+
+.combobox-input-area {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    min-height: 46px;
+    transition: border-color 0.2s;
+    cursor: text;
+}
+
+.combobox-input-area:focus-within {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(77, 168, 255, 0.12);
+}
+
+.combobox-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.combobox-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(77, 168, 255, 0.15);
+    border: 1px solid var(--blue);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    color: var(--blue);
+}
+
+.combobox-chip .chip-remove {
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.combobox-chip .chip-remove:hover {
+    color: var(--rose);
+}
+
+.combobox-text-input {
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-family: var(--font-sans);
+    flex: 1;
+    min-width: 80px;
+    outline: none;
+    padding: 4px 0;
+}
+
+.combobox-text-input::placeholder {
+    color: #3D4F6A;
+}
+
+.combobox-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.combobox-dropdown.open {
+    display: block;
+}
+
+.combobox-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    transition: background 0.1s, color 0.1s;
+}
+
+.combobox-option:hover,
+.combobox-option.active {
+    background: rgba(77, 168, 255, 0.1);
+    color: var(--text);
+}
+
+.combobox-option .option-code {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    margin-left: 6px;
+}

@@ -87,13 +87,12 @@ body {
 /* --- Card Container --- */
 .card {
     width: 7.2in;
-    min-height: 9in;
-    max-height: 9in;
+    height: 9in;
     padding: 0.5in 0.56in 0.44in;
     background: #0C1220;
     position: relative;
+    overflow: hidden;
     page-break-after: always;
-    page-break-inside: avoid;
     display: flex;
     flex-direction: column;
 }
@@ -227,8 +226,6 @@ body {
    ============================================================ */
 .cover-card {
     padding: 0;
-    display: block;
-    overflow: hidden;
 }
 .cover-card .card-brand {
     position: absolute;
@@ -868,10 +865,14 @@ body {
     text-align: center;
 }
 .sample-size-note.engagement-weighted {
-    font-size: 8pt;
+    font-size: 9pt;
     margin-top: 0.15in;
-    line-height: 1.7;
-    letter-spacing: 0.2px;
+    line-height: 2.0;
+    letter-spacing: 0.5px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
 }
 
 /* ============================================================

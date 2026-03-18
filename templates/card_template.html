@@ -238,7 +238,7 @@
             <p class="sample-size-note engagement-weighted">
                 Engagement-weighted:
                 {% for w in card_data.sentiment.weighted_blocks %}
-                <span style="color: {{ w.color }}">{{ w.pct }}% {{ w.name }}</span>{% if not loop.last %}&nbsp;&nbsp;{% endif %}
+                <span class="weighted-chip" style="color: {{ w.color }}">{{ w.pct }}% {{ w.name }}</span>{% if not loop.last %}&nbsp;&nbsp;{% endif %}
                 {% endfor %}
             </p>
             {% endif %}

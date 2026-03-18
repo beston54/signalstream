@@ -88,6 +88,21 @@
             <div style="font-size: 0.85rem; color: #F0F4F8;">{{ comparison.delta }}</div>
         </div>
         {% endif %}
+
+        {% if comparison.can_analyze %}
+        <div style="background: #1C2640; border-radius: 12px; padding: 1.25rem; border: 1px solid #2A3550; margin-top: 1rem; text-align: center;">
+            <p style="font-size: 0.9rem; color: #8899B0; margin-bottom: 1rem;">These topics haven't been analyzed yet. Click below to run a fresh analysis.</p>
+            <form action="/compare/analyze" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="topic_a" value="{{ topic_a }}">
+                <input type="hidden" name="topic_b" value="{{ topic_b }}">
+                <input type="hidden" name="time_range" value="{{ time_range }}">
+                <button type="submit" style="padding: 0.85rem 2rem; background: #5DD9A5; color: #0C1220; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;">
+                    Analyze &amp; Compare
+                </button>
+            </form>
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 </div>

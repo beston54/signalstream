@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}Comparison in Progress &mdash; signalstream{% endblock %}
+
+{% block content %}
+<section class="status-page" data-compare-id="{{ compare_id }}">
+    <div class="status-card" style="max-width: 820px;">
+        <div class="status-header">
+            <h1 class="status-title" id="main-phase">Analyzing Topics</h1>
+            <span class="status-badge" id="main-badge" data-status="collecting">running</span>
+        </div>
+        <p class="status-topic">Comparing: <strong>{{ cjob.job_a.topic }}</strong> vs <strong>{{ cjob.job_b.topic }}</strong></p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; text-align: left; margin-bottom: 2rem;">
+            {% for side, label in [('job_a', 'A'), ('job_b', 'B')] %}
+            {% set info = cjob[side] %}
+            <div id="panel-{{ side }}" style="background: var(--bg); border-radius: var(--radius); padding: 1.25rem; border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                    <h3 style="color: var(--blue); font-size: 0.95rem; margin: 0;">{{ info.topic }}</h3>
+                    <span class="status-badge side-badge" id="badge-{{ side }}" data-status="{{ info.status }}" style="font-size: 0.6rem;">
+                        {% if info.status == 'existing' %}ready{% else %}{{ info.status }}{% endif %}
+                    </span>
+                </div>
+
+                {% if info.status != 'existing' %}
+                <div class="pipeline-stages" id="stages-{{ side }}" style="margin-bottom: 1rem; justify-content: flex-start;">
+                    <div class="pipeline-stage" id="stage-{{ side }}-collect">
+                        <div class="pipeline-stage-dot">01</div>
+                        <span class="pipeline-stage-label">Collect</span>
+                    </div>
+                    <div class="pipeline-connector" id="conn-{{ side }}-1"></div>
+                    <div class="pipeline-stage" id="stage-{{ side }}-analyze">
+                        <div class="pipeline-stage-dot">02</div>
+                        <span class="pipeline-stage-label">Analyze</span>
+                    </div>
+                    <div class="pipeline-connector" id="conn-{{ side }}-2"></div>
+                    <div class="pipeline-stage" id="stage-{{ side }}-theme">
+                        <div class="pipeline-stage-dot">03</div>
+                        <span class="pipeline-stage-label">Theme</span>
+                    </div>
+                    <div class="pipeline-connector" id="conn-{{ side }}-3"></div>
+                    <div class="pipeline-stage" id="stage-{{ side }}-report">
+                        <div class="pipeline-stage-dot">04</div>
+                        <span class="pipeline-stage-label">Report</span>
+                    </div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-{{ side }}" style="width: {{ info.progress_pct }}%"></div>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    <span id="pct-{{ side }}">{{ info.progress_pct }}</span>%
+                </p>
+                <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.25rem;" id="msg-{{ side }}">Queued...</p>
+                {% else %}
+                <p style="font-size: 0.85rem; color: var(--green);">Existing analysis data found. Ready for comparison.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Results section (shown when both complete) -->
+        <div id="compare-results" style="display: none; text-align: left;"></div>
+
+        <!-- Error section -->
+        <div id="compare-error" style="display: none; margin-top: 1rem;">
+            <div class="status-error">
+                <p id="error-text" style="color: var(--rose); font-size: 0.9rem;"></p>
+                <a href="{{ url_for('compare_page') }}" class="btn btn-secondary" style="margin-top: 0.75rem; display: inline-block;">Try Again</a>
+            </div>
+        </div>
+
+        <p class="status-hint" style="font-size: 0.8rem; color: var(--text-dim); margin-top: 1rem; text-align: center;">
+            Usually takes 2&ndash;5 minutes per topic depending on sample size.
+        </p>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var compareId = document.querySelector('[data-compare-id]').dataset.compareId;
+    var pollInterval = 3000;
+    var timer = null;
+
+    var stageMap = {
+        'collecting': 'collect',
+        'analyzing':  'analyze',
+        'theming':    'theme',
+        'generating': 'report',
+        'complete':   'report'
+    };
+
+    var stageOrder = ['collect', 'analyze', 'theme', 'report'];
+
+    function updatePipeline(side, status) {
+        var activeStage = stageMap[status] || null;
+        var activeIdx = activeStage ? stageOrder.indexOf(activeStage) : -1;
+
+        for (var i = 0; i < stageOrder.length; i++) {
+            var el = document.getElementById('stage-' + side + '-' + stageOrder[i]);
+            if (!el) continue;
+            el.classList.remove('active', 'done');
+            if (i < activeIdx) {
+                el.classList.add('done');
+            } else if (i === activeIdx) {
+                el.classList.add(status === 'complete' ? 'done' : 'active');
+            }
+        }
+
+        // Connectors
+        for (var c = 1; c <= 3; c++) {
+            var conn = document.getElementById('conn-' + side + '-' + c);
+            if (conn) {
+                conn.classList.toggle('done', c <= activeIdx);
+            }
+        }
+    }
+
+    function renderResults(comparison) {
+        var container = document.getElementById('compare-results');
+        var html = '<h2 style="font-family: var(--font-serif); font-size: 1.2rem; color: var(--text); margin-bottom: 1rem;">Comparison Results</h2>';
+        html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">';
+
+        ['a', 'b'].forEach(function(side) {
+            var d = comparison[side];
+            if (!d) return;
+            html += '<div style="background: var(--bg); border-radius: var(--radius); padding: 1.25rem; border: 1px solid var(--border);">';
+            html += '<h3 style="color: var(--blue); font-size: 1rem; margin-bottom: 0.75rem;">' + d.topic + '</h3>';
+            html += '<div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">' + d.post_count + ' posts</div>';
+            html += '<div style="margin-top: 0.75rem;">';
+            html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">';
+            html += '<span style="color: var(--green); font-size: 0.9rem;">Positive ' + d.positive_pct + '%</span>';
+            html += '<span style="color: var(--rose); font-size: 0.9rem;">Negative ' + d.negative_pct + '%</span>';
+            html += '</div>';
+            html += '<div style="height: 8px; background: var(--bg-card); border-radius: 4px; overflow: hidden; display: flex;">';
+            html += '<div style="width: ' + d.positive_pct + '%; background: var(--green);"></div>';
+            html += '<div style="width: ' + d.neutral_pct + '%; background: var(--text-muted);"></div>';
+            html += '<div style="width: ' + d.negative_pct + '%; background: var(--rose);"></div>';
+            html += '</div></div>';
+            html += '<div style="margin-top: 0.75rem; font-size: 0.85rem;">';
+            html += '<div style="color: var(--text);">Dominant: <span style="color: var(--amber);">' + (d.dominant_emotion ? d.dominant_emotion.charAt(0).toUpperCase() + d.dominant_emotion.slice(1) : 'Unknown') + '</span> (' + d.dominant_emotion_pct + '%)</div>';
+            html += '</div>';
+            if (d.themes && d.themes.length) {
+                html += '<div style="margin-top: 0.75rem;">';
+                html += '<div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem;">Top Themes</div>';
+                d.themes.forEach(function(t) {
+                    html += '<div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.2rem;">&#8226; ' + t + '</div>';
+                });
+                html += '</div>';
+            }
+            if (d.job_id) {
+                html += '<a href="/status/' + d.job_id + '" style="display: inline-block; margin-top: 0.75rem; font-size: 0.8rem; color: var(--blue); text-decoration: none;">View Full Report &rarr;</a>';
+            }
+            html += '</div>';
+        });
+
+        html += '</div>';
+
+        if (comparison.delta) {
+            html += '<div style="background: var(--bg); border-radius: var(--radius); padding: 1.25rem; border: 1px solid var(--border); margin-top: 1rem;">';
+            html += '<h3 style="color: var(--amber); font-size: 0.9rem; margin-bottom: 0.5rem;">Key Differences</h3>';
+            html += '<div style="font-size: 0.85rem; color: var(--text);">' + comparison.delta + '</div>';
+            html += '</div>';
+        }
+
+        html += '<div style="text-align: center; margin-top: 1.5rem;">';
+        html += '<a href="/compare" class="btn btn-secondary" style="display: inline-block; padding: 0.7rem 1.5rem; background: var(--bg-elevated); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); text-decoration: none; font-size: 0.9rem;">New Comparison</a>';
+        html += '</div>';
+
+        container.innerHTML = html;
+        container.style.display = 'block';
+    }
+
+    function poll() {
+        fetch('/api/compare-status/' + compareId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    clearInterval(timer);
+                    return;
+                }
+
+                // Update each side
+                ['job_a', 'job_b'].forEach(function(side) {
+                    var info = data[side];
+                    if (!info || info.status === 'existing') return;
+
+                    var badge = document.getElementById('badge-' + side);
+                    if (badge) {
+                        badge.dataset.status = info.status;
+                        badge.textContent = info.status;
+                    }
+
+                    var bar = document.getElementById('progress-' + side);
+                    if (bar) bar.style.width = info.progress_pct + '%';
+
+                    var pct = document.getElementById('pct-' + side);
+                    if (pct) pct.textContent = info.progress_pct;
+
+                    var msg = document.getElementById('msg-' + side);
+                    if (msg && info.message) msg.textContent = info.message;
+
+                    updatePipeline(side, info.status);
+                });
+
+                // Update main badge
+                var mainBadge = document.getElementById('main-badge');
+                var mainPhase = document.getElementById('main-phase');
+                if (data.status === 'complete') {
+                    mainBadge.dataset.status = 'complete';
+                    mainBadge.textContent = 'complete';
+                    mainPhase.textContent = 'Comparison Ready';
+                    clearInterval(timer);
+                    if (data.comparison) {
+                        renderResults(data.comparison);
+                    }
+                } else if (data.status === 'error') {
+                    mainBadge.dataset.status = 'error';
+                    mainBadge.textContent = 'error';
+                    mainPhase.textContent = 'Analysis Failed';
+                    clearInterval(timer);
+                    var errBox = document.getElementById('compare-error');
+                    var errText = document.getElementById('error-text');
+                    if (errBox) errBox.style.display = 'block';
+                    if (errText) {
+                        var msgs = [];
+                        ['job_a', 'job_b'].forEach(function(s) {
+                            if (data[s] && data[s].status === 'error') {
+                                msgs.push(data[s].topic + ': ' + (data[s].message || 'Analysis failed'));
+                            }
+                        });
+                        errText.textContent = msgs.join(' | ') || 'One or both analyses failed.';
+                    }
+                }
+            })
+            .catch(function() {
+                // Network error — keep polling
+            });
+    }
+
+    // Start polling
+    poll();
+    timer = setInterval(poll, pollInterval);
+})();
+</script>
+{% endblock %}
