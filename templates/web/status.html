@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Analysis in Progress &mdash; signalstream{% endblock %}
+
+{% block content %}
+<section class="status-page" data-job-id="{{ job.id }}" data-started-at="{{ job.started_at or '' }}">
+    <div class="status-card">
+        <div class="status-header">
+            <h1 class="status-title" id="phase">{{ job.phase }}</h1>
+            <span class="status-badge" id="badge" data-status="{{ job.status }}">{{ job.status }}</span>
+        </div>
+
+        <p class="status-topic">Topic: <strong>{{ job.topic }}</strong></p>
+
+        <!-- Pipeline stages -->
+        <div class="pipeline-stages" id="pipeline-stages">
+            <div class="pipeline-stage" id="stage-collect">
+                <div class="pipeline-stage-dot">01</div>
+                <span class="pipeline-stage-label">Collect</span>
+            </div>
+            <div class="pipeline-connector" id="conn-1"></div>
+            <div class="pipeline-stage" id="stage-analyze">
+                <div class="pipeline-stage-dot">02</div>
+                <span class="pipeline-stage-label">Analyze</span>
+            </div>
+            <div class="pipeline-connector" id="conn-2"></div>
+            <div class="pipeline-stage" id="stage-theme">
+                <div class="pipeline-stage-dot">03</div>
+                <span class="pipeline-stage-label">Theme</span>
+            </div>
+            <div class="pipeline-connector" id="conn-3"></div>
+            <div class="pipeline-stage" id="stage-report">
+                <div class="pipeline-stage-dot">04</div>
+                <span class="pipeline-stage-label">Report</span>
+            </div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar" style="width: {{ job.progress_pct }}%"></div>
+        </div>
+        <p class="progress-label"><span id="pct">{{ job.progress_pct }}</span>%</p>
+
+        <p class="status-message" id="message">{{ job.message }}</p>
+
+        <!-- Cancel button (visible while job is running) -->
+        <div id="cancel-section" style="margin-bottom: 24px; {% if job.status in ('complete', 'error', 'cancelled') %}display:none;{% endif %}">
+            <button id="cancel-btn" class="btn btn-cancel btn-sm">Cancel Analysis</button>
+        </div>
+
+        <!-- Preview section (shown on completion) -->
+        <div id="preview-section" style="display:none;">
+            <div class="preview-grid">
+                <div class="preview-stat">
+                    <span class="preview-stat-value" id="preview-posts">--</span>
+                    <span class="preview-stat-label">Posts</span>
+                </div>
+                <div class="preview-stat">
+                    <span class="preview-stat-value" id="preview-communities">--</span>
+                    <span class="preview-stat-label">Communities</span>
+                </div>
+                <div class="preview-stat">
+                    <span class="preview-stat-value" id="preview-emotion">--</span>
+                    <span class="preview-stat-label">Dominant Tone</span>
+                </div>
+            </div>
+
+            <div class="preview-emotions" id="preview-emotions"></div>
+
+            <div class="preview-themes" id="preview-themes"></div>
+
+            <!-- Trend Data (populated via JS) -->
+            <div id="trend-section" style="display: none; margin-top: 1.5rem;">
+                <h3 style="font-size: 0.9rem; color: #8899B0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Trend vs. Previous Analysis</h3>
+                <div id="trend-deltas" style="display: flex; gap: 1rem; flex-wrap: wrap;"></div>
+            </div>
+        </div>
+
+        <!-- Email gate -->
+        <div id="email-gate" style="display:none;">
+            <div class="email-form">
+                <p class="email-prompt">Enter your email to download the report</p>
+                <div class="email-input-row">
+                    <input type="email" id="email-input" placeholder="you@example.com" class="email-input">
+                    <button id="email-submit" class="btn btn-primary">Get Report</button>
+                </div>
+                <label class="email-consent" style="display:flex; align-items:flex-start; gap:0.5rem; margin-top:0.75rem; font-size:0.85rem; color:var(--text-secondary, #8899B0);">
+                    <input type="checkbox" id="email-consent" style="margin-top:0.2rem;">
+                    <span>I consent to my email being stored to deliver this report. It will be deleted within 30 days and will not be shared with third parties.</span>
+                </label>
+                <p class="email-hint" id="email-error" style="display:none; color: var(--rose);">Please enter a valid email address.</p>
+                <p class="email-hint" id="consent-error" style="display:none; color: var(--rose);">Please confirm your consent before proceeding.</p>
+            </div>
+        </div>
+
+        <div class="status-actions" id="actions" style="display:none;">
+            <a id="download-btn" href="{{ url_for('download', job_id=job.id) }}" class="btn btn-primary btn-lg">
+                Download PDF
+            </a>
+            <a href="/export/{{ job.id }}" class="btn btn-secondary">Export Full Data (ZIP)</a>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">New Analysis</a>
+        </div>
+
+        <div class="status-error" id="error-box" style="display:none;">
+            <p id="error-text"></p>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Try Again</a>
+        </div>
+
+        <div class="status-meta">
+            <span>Started: {{ job.started_at[:19] | default('--') }}</span>
+            <span id="elapsed-timer" style="font-variant-numeric:tabular-nums;"></span>
+            {% if job.completed_at %}
+            <span>Completed: {{ job.completed_at[:19] }}</span>
+            {% endif %}
+        </div>
+        <p class="status-hint" id="duration-hint" style="font-size:0.8rem; color:var(--text-dim, #566580); margin-top:0.5rem; text-align:center;">
+            Usually takes 2&ndash;5 minutes depending on sample size.
+        </p>
+
+        <div id="reconnect-banner" class="reconnect-banner" style="display:none;">
+            <span class="reconnect-spinner"></span>
+            Connection lost, retrying&hellip;
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

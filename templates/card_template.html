@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ branding.company_name }} — {{ report_date }}</title>
+</head>
+<body>
+
+    {# ============================================================
+       Card 1: Cover / Executive Snapshot
+       ============================================================ #}
+    <div class="card cover-card">
+        {% if photos and photos.cover %}
+        <img class="cover-photo" src="{{ photos.cover.data_uri }}" alt="{{ photos.cover.alt|default('') }}">
+        <div class="cover-gradient"></div>
+        <div class="card-brand">
+            <span class="card-brand-wordmark"><span>signal</span>stream</span>
+        </div>
+        {% if photos.cover.photographer %}
+        <span class="cover-photo-credit">Photo: {{ photos.cover.photographer }}</span>
+        {% endif %}
+        {% else %}
+        <div class="cover-gradient" style="height:100%;background:linear-gradient(160deg,#0C1220 0%,#1C2640 50%,#0C1220 100%)"></div>
+        <div class="card-brand">
+            <span class="card-brand-wordmark"><span>signal</span>stream</span>
+        </div>
+        {% endif %}
+
+        <div class="cover-content">
+            <span class="card-kicker">Social Intelligence Report</span>
+            <h1 class="card-headline">{{ card_data.cover.headline }}</h1>
+            <div class="cover-metrics">
+                <div class="cover-metric-chip">
+                    <span class="cover-metric-value">{{ statistics.total_posts }}</span>
+                    <span class="cover-metric-label">{{ "Post" if statistics.total_posts|int == 1 else "Posts" }}</span>
+                </div>
+                <div class="cover-metric-chip">
+                    <span class="cover-metric-value">{{ card_data.cover.community_count }}</span>
+                    <span class="cover-metric-label">{{ "Community" if card_data.cover.community_count|int == 1 else "Communities" }}</span>
+                </div>
+                <div class="cover-metric-chip">
+                    <span class="cover-metric-value">{{ card_data.cover.dominant_emotion|capitalize }}</span>
+                    <span class="cover-metric-label">Dominant Tone{% if card_data.cover.dominant_emotion_pct %} &middot; {{ card_data.cover.dominant_emotion_pct }}%{% endif %}</span>
+                </div>
+            </div>
+            {% if card_data.cover.low_confidence %}
+            <div class="low-confidence-banner">
+                LOW CONFIDENCE — Based on {{ card_data.cover.total_posts }} posts (n&lt;30). Interpret with caution.
+            </div>
+            {% endif %}
+        </div>
+        <div class="cover-footer">
+            <span class="card-footer-brand"><span>signal</span>stream</span>
+            <span class="card-footer-meta">{{ report_date }}</span>
+        </div>
+    </div>
+
+    {# ============================================================
+       Card 2: Executive Summary
+       ============================================================ #}
+    {% if executive_summary and executive_summary.narrative %}
+    <div class="card">
+        <div class="card-brand">
+            <span class="card-brand-wordmark"><span>signal</span>stream</span>
+            <span class="card-kicker">Executive Summary</span>
+        </div>
+
+        <div class="card-body">
+            <h2 class="card-headline" style="font-size: 20pt; margin-bottom: 0.16in;">What You Need to Know</h2>
+            <div class="card-divider-accent"></div>
+            <p class="body-text" style="font-size: 10pt; line-height: 1.6; margin-bottom: 0.2in;">{{ executive_summary.narrative }}</p>
+
+            <div class="stat-badges" style="margin-bottom: 0.2in;">
+                <div class="stat-badge">
+                    <span class="stat-badge-value">{{ statistics.total_posts }}</span>
+                    <span class="stat-badge-label">{{ "Post" if statistics.total_posts|int == 1 else "Posts" }} Analyzed</span>
+                </div>
+                <div class="stat-badge">
+                    <span class="stat-badge-value">{{ card_data.cover.community_count }}</span>
+                    <span class="stat-badge-label">{{ "Community" if card_data.cover.community_count|int == 1 else "Communities" }}</span>
+                </div>
+                <div class="stat-badge">
+                    <span class="stat-badge-value">{{ card_data.emotion.dominant_pct }}%</span>
+                    <span class="stat-badge-label">{{ card_data.emotion.dominant_name|capitalize }}</span>
+                </div>
+            </div>
+
+            {% if card_data.playbook.entries %}
+            <hr class="card-divider">
+            <p class="section-label" style="margin-top: 0.12in;">Top Recommendation</p>
+            <div class="playbook-card" style="border-left-color: {{ card_data.playbook.entries[0].color }}; margin-top: 0.08in;">
+                <span class="playbook-emotion-badge" style="background: {{ card_data.playbook.entries[0].color }}; color: #0C1220;">{{ card_data.playbook.entries[0].emotion }}</span>
+                <p class="playbook-title">{{ card_data.playbook.entries[0].title }}</p>
+                <p class="playbook-approach">{{ card_data.playbook.entries[0].description|truncate(170, True, '...') }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer">
+            <span class="card-footer-brand"><span>signal</span>stream</span>
+            <span class="card-footer-meta">{{ report_date }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ============================================================
+       Card 3: Messaging Playbook
+       ============================================================ #}
+    {% if card_data.playbook.entries %}
+    <div class="card">
+        <div class="card-brand">
+            <span class="card-brand-wordmark"><span>signal</span>stream</span>
+            <span class="card-kicker">Messaging Strategy</span>
+        </div>
+
+        <div class="card-body">
+            <h2 class="card-headline" style="font-size: 20pt; margin-bottom: 0.08in;">Messaging Playbook</h2>
+            {% if card_data.playbook.intro %}<p class="body-text" style="margin-bottom: 0.2in;">{{ card_data.playbook.intro }}</p>{% endif %}
+
+            <div class="playbook-cards">
+                {% for entry in card_data.playbook.entries %}
+                <div class="playbook-card" style="border-left-color: {{ entry.color }}">
+                    <span class="playbook-emotion-badge" style="background: {{ entry.color }}; color: #0C1220;">{{ entry.emotion }}</span>
+                    <p class="playbook-title">{{ entry.title }}</p>
+                    <p class="playbook-approach">{{ entry.description|truncate(170, True, '...') }}</p>
+                    {% if entry.example %}
+                    <p class="playbook-example">{{ entry.example }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card-footer">
+            <span class="card-footer-brand"><span>signal</span>stream</span>
+            <span class="card-footer-meta">{{ report_date }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ============================================================
+       Card 4: Emotional Landscape
+       ============================================================ #}
+    <div class="card">
+        <div class="card-brand">
+            <span class="card-brand-wordmark"><span>signal</span>stream</span>
+            <span class="card-kicker">Emotional Tone</span>
+        </div>
+
+        <div class="card-body">
+
+            <div class="emotion-hero">
+                <span class="hero-metric" style="color: {{ card_data.emotion.dominant_color }}">{{ card_data.emotion.dominant_name|capitalize }}</span>
+                <span class="emotion-hero-pct" style="color: {{ card_data.emotion.dominant_color }}">{{ card_data.emotion.dominant_pct }}%</span>
+                <p class="hero-metric-label">Dominant emotion across {{ statistics.total_posts }} posts</p>
+            </div>
+
+            <div class="card-divider-accent"></div>
+
+            <div class="bar-chart" style="margin-top: 0.16in;">
+                {% for item in card_data.emotion.bars %}
+                <div class="bar-row">
+                    <span class="bar-label">{{ item.name|capitalize }}</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: {{ item.pct }}%; background-color: {{ item.color }}"></div>
+                    </div>
+                    <span class="bar-value">{{ item.pct }}%
+                        {% if item.ci_lower is defined and item.ci_upper is defined and item.ci_lower is not none and item.ci_upper is not none %}
+                        <span style="font-size: 6pt; color: #566580;">({{ item.ci_lower }}–{{ item.ci_upper }}%)</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if card_data.emotion.narrative %}
+            <p class="card-narrative">{{ card_data.emotion.narrative }}</p>
+            {% endif %}
+        </div>
+
+        <div class="card-footer">
+            <span class="card-footer-brand"><span>signal</span>stream</span>
+            <span class="card-footer-meta">{{ report_date }}</span>
+        </div>
+    </div>
+
+    {# ============================================================
+       Card 3: Sentiment Split
+       ============================================================ #}
+    <div class="card">
+        <div class="card-brand">
+            <span class="card-brand-wordmark"><span>signal</span>stream</span>
+            <span class="card-kicker">Sentiment Analysis</span>
+        </div>
+
+        <div class="card-body">
+            <p class="section-label">Overall Sentiment</p>
+            <div class="card-divider-accent"></div>
+
+            <div class="sentiment-trio">
+                {% for item in card_data.sentiment.blocks %}
+                <div class="sentiment-block">
+                    <span class="sentiment-pct" style="color: {{ item.color }}">{{ item.pct }}%</span>
+                    {% if item.ci_lower is defined and item.ci_upper is defined and item.ci_lower is not none and item.ci_upper is not none %}
+                    <span style="font-size: 6pt; color: #566580;">({{ item.ci_lower }}–{{ item.ci_upper }}%)</span>
+                    {% endif %}
+                    <span class="sentiment-count">{{ item.count }} {{ "post" if item.count|int == 1 else "posts" }}</span>
+                    <span class="sentiment-type" style="color: {{ item.color }}">{{ item.name }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <hr class="card-divider">
+
+            <div class="stat-badges">
+                <div class="stat-badge">
+                    <span class="stat-badge-value">{{ card_data.sentiment.community_count }}</span>
+                    <span class="stat-badge-label">{{ "Community" if card_data.sentiment.community_count|int == 1 else "Communities" }}</span>
+                </div>
+                <div class="stat-badge">
+                    <span class="stat-badge-value">{{ card_data.sentiment.phrase_count }}</span>
+                    <span class="stat-badge-label">{{ "Search Term" if card_data.sentiment.phrase_count|int == 1 else "Search Terms" }}</span>
+                </div>
+                {% if card_data.sentiment.date_range %}
+                <div class="stat-badge">
+                    <span class="stat-badge-value" style="font-size: 11pt;">{{ card_data.sentiment.date_range }}</span>
+                    <span class="stat-badge-label">Period</span>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if card_data.sentiment.narrative %}
+            <p class="card-narrative">{{ card_data.sentiment.narrative }}</p>
+            {% endif %}
+            <p class="sample-size-note">n={{ statistics.total_posts }} posts{% if card_data.cover.low_confidence %} · LOW CONFIDENCE{% endif %}</p>
+            {% if card_data.sentiment.weighted_blocks %}
+            <p class="sample-size-note engagement-weighted">
+                Engagement-weighted:
+                {% for w in card_data.sentiment.weighted_blocks %}
+                <span style="color: {{ w.color }}">{{ w.pct }}% {{ w.name }}</span>{% if not loop.last %}&nbsp;&nbsp;{% endif %}
+                {% endfor %}
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="card-footer">
+            <span class="card-footer-brand"><span>signal</span>stream</span>
+            <span class="card-footer-meta">{{ report_date }}</span>
+        </div>
+    </div>
+
+    {# ============================================================
+       Card 4: Key Themes
+       ============================================================ #}
+    <div class="card">
+        <div class="card-brand">
+            <span class="card-brand-wordmark"><span>signal</span>stream</span>
+            <span class="card-kicker">Themes &amp; Narratives</span>
+        </div>
+
+        <div class="card-body">
+            <h2 class="card-headline" style="font-size: 22pt; margin-bottom: 0.2in;">{{ card_data.themes.top_theme_name|truncate(50, True, '...') }}</h2>
+            <div class="card-divider-accent"></div>
+
+            <div class="theme-bars">
+                {% for theme in card_data.themes.bars %}
+                <div class="theme-row">
+                    <div class="theme-row-header">
+                        <span class="theme-name">{{ theme.name|truncate(60, True, '...') }}</span>
+                        <span class="theme-pct">{{ theme.pct }}% <span style="font-size: 7pt; color: #8899B0;">({{ theme.count }} {{ "post" if theme.count|int == 1 else "posts" }})</span></span>
+                    </div>
+                    <div class="theme-track">
+                        <div class="theme-fill" style="width: {{ theme.pct }}%"></div>
+                    </div>
+                    {% if theme.description %}
+                    <p style="font-size: 7pt; color: #8899B0; margin: 0.02in 0 0.06in 0; line-height: 1.3;">{{ theme.description|truncate(120, True, '...') }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <p class="sample-size-note">Posts may appear under multiple themes.</p>
+
+            {% if card_data.themes.chips %}
+            <div class="chip-row">
+                {% for chip in card_data.themes.chips %}
+                <span class="chip">{{ chip }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if card_data.themes.quote %}
+            <div class="pull-quote">
+                <p class="pull-quote-text">"{{ card_data.themes.quote.text|truncate(170, True, '...') }}"</p>
+                <p class="pull-quote-meta">{{ card_data.themes.quote.meta }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer">
+            <span class="card-footer-brand"><span>signal</span>stream</span>
+            <span class="card-footer-meta">{{ report_date }}</span>
+        </div>
+    </div>
+
+    {# ============================================================
+       Card 5: Community Lens
+       ============================================================ #}
+    {% if card_data.community.rows %}
+    <div class="card">
+        <div class="card-brand">
+            <span class="card-brand-wordmark"><span>signal</span>stream</span>
+            <span class="card-kicker">Community Comparison</span>
+        </div>
+
+        <div class="card-body">
+            <p class="section-label">Sentiment by Community</p>
+            <div class="card-divider-accent"></div>
+
+            <div class="community-legend">
+                <span class="legend-item"><span class="legend-dot" style="background: #5DD9A5"></span> Positive</span>
+                <span class="legend-item"><span class="legend-dot" style="background: #8899B0"></span> Neutral</span>
+                <span class="legend-item"><span class="legend-dot" style="background: #9B8AFF"></span> Mixed</span>
+                <span class="legend-item"><span class="legend-dot" style="background: #FF7B8E"></span> Negative</span>
+            </div>
+
+            <div class="stacked-bars">
+                {% for row in card_data.community.rows %}
+                <div class="stacked-row">
+                    <span class="stacked-label">{{ row.community }}</span>
+                    <div class="stacked-track">
+                        {% if row.positive_pct > 0 %}
+                        <div class="stacked-segment" style="width: {{ row.positive_pct }}%; background: #5DD9A5"></div>
+                        {% endif %}
+                        {% if row.neutral_pct > 0 %}
+                        <div class="stacked-segment" style="width: {{ row.neutral_pct }}%; background: #8899B0"></div>
+                        {% endif %}
+                        {% if row.mixed_pct > 0 %}
+                        <div class="stacked-segment" style="width: {{ row.mixed_pct }}%; background: #9B8AFF"></div>
+                        {% endif %}
+                        {% if row.negative_pct > 0 %}
+                        <div class="stacked-segment" style="width: {{ row.negative_pct }}%; background: #FF7B8E"></div>
+                        {% endif %}
+                    </div>
+                    <span class="stacked-count">n={{ row.total }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if card_data.community.most_polarized %}
+            <div style="background: #2A1520; border: 1px solid #FF7B8E; border-radius: 6px; padding: 0.2em 0.5em; margin-top: 0.15in; font-size: 8pt; color: #FFB4B4;">
+                <strong>{{ card_data.community.most_polarized.label }}:</strong> {{ card_data.community.most_polarized.community }} — {{ card_data.community.most_polarized.negative_pct }}% negative sentiment ({{ card_data.community.most_polarized.total }} posts)
+            </div>
+            {% endif %}
+
+            {% if card_data.community.quote %}
+            <div class="community-quote">
+                <p class="community-quote-text">"{{ card_data.community.quote.text|truncate(170, True, '...') }}"</p>
+                <p class="community-quote-source">
+                    {{ card_data.community.quote.community }}
+                    <span class="community-quote-badge" style="background: {{ card_data.community.quote.sentiment_color }}">{{ card_data.community.quote.sentiment }}</span>
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer">
+            <span class="card-footer-brand"><span>signal</span>stream</span>
+            <span class="card-footer-meta">{{ report_date }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ============================================================
+       Card 7: Next Steps + Methodology
+       ============================================================ #}
+    <div class="card">
+        <div class="card-brand">
+            <span class="card-brand-wordmark"><span>signal</span>stream</span>
+            <span class="card-kicker">Action Items</span>
+        </div>
+
+        <div class="card-body">
+            <p class="section-label">Priority Actions</p>
+            <div class="card-divider-accent"></div>
+
+            <div class="action-items">
+                {% for step in card_data.next_steps.action_list %}
+                <div class="action-item">
+                    <span class="action-number">{{ loop.index }}</span>
+                    <div class="action-content">
+                        <p class="action-title">{{ step.action|truncate(120, True, '...') }}</p>
+                        <p class="action-desc">{{ step.rationale|truncate(160, True, '...') }}</p>
+                    </div>
+                    {% if step.priority %}
+                    <span class="action-priority priority-{{ step.priority|lower }}">{{ step.priority }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if card_data.next_steps.novel_ideas %}
+            <hr class="card-divider">
+            {% if card_data.next_steps.novel_ideas|length > 1 %}
+            <p class="section-label" style="margin-top: 0.1in;">Novel Ideas from the Community</p>
+            {% else %}
+            <p class="sample-size-note" style="margin-top: 0.1in; text-transform: uppercase; letter-spacing: 0.04em;">From the community</p>
+            {% endif %}
+            <div style="margin-top: 0.06in;">
+                {% for idea in card_data.next_steps.novel_ideas[:3] %}
+                <p class="body-text" style="font-size: 8pt; margin-bottom: 0.06in; padding-left: 0.1in; border-left: 2px solid #9B8AFF;">{{ idea|truncate(160, True, '...') }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <hr class="card-divider">
+
+            {% if statistics.sample_tier %}
+            <div style="background: #1C2640; border: 1px solid #2A3550; border-radius: 6px; padding: 0.3em 0.6em; margin-bottom: 0.12in; font-size: 7.5pt;">
+                <strong style="color: #FFB547;">{{ statistics.sample_tier }} Sample</strong>
+                <span style="color: #8899B0;"> (n={{ statistics.total_posts }}) — {{ statistics.sample_tier_note }}</span>
+            </div>
+            {% endif %}
+            <div style="font-size: 7pt; color: #566580; margin-bottom: 0.12in;">
+                Platform note: Reddit users skew 18–34, male, US-centric. X/Twitter skews toward journalists and politically engaged users. Results may not represent the general population.
+            </div>
+
+            {% if methodology and methodology.scope and methodology.scope.mixed_provider_warning %}
+            <div style="background: #3D1F1F; border: 1px solid #FF7B8E; border-radius: 6px; padding: 0.3em 0.6em; margin-bottom: 0.1in; font-size: 7.5pt; color: #FFB4B4;">
+                <strong>Notice:</strong> Multiple AI models ({{ methodology.scope.providers_used|join(', ') }}) were used due to failover. Results may reflect differing classification biases.
+            </div>
+            {% endif %}
+
+            <p class="section-label" style="margin-top: 0.12in;">How We Got Here</p>
+            <div class="methodology-pipeline">
+                <div class="pipeline-step">
+                    <span class="pipeline-step-number">Step 01</span>
+                    <span class="pipeline-step-name">Collect</span>
+                    <span class="pipeline-step-desc">{{ card_data.methodology.steps[0].desc|default('Gather posts') }}</span>
+                </div>
+                <span class="pipeline-arrow">&#8594;</span>
+                <div class="pipeline-step">
+                    <span class="pipeline-step-number">Step 02</span>
+                    <span class="pipeline-step-name">Analyze</span>
+                    <span class="pipeline-step-desc">{{ card_data.methodology.steps[1].desc|default('AI sentiment') }}</span>
+                </div>
+                <span class="pipeline-arrow">&#8594;</span>
+                <div class="pipeline-step">
+                    <span class="pipeline-step-number">Step 03</span>
+                    <span class="pipeline-step-name">Theme</span>
+                    <span class="pipeline-step-desc">{{ card_data.methodology.steps[2].desc|default('Extract themes') }}</span>
+                </div>
+                <span class="pipeline-arrow">&#8594;</span>
+                <div class="pipeline-step">
+                    <span class="pipeline-step-number">Step 04</span>
+                    <span class="pipeline-step-name">Report</span>
+                    <span class="pipeline-step-desc">{{ card_data.methodology.steps[3].desc|default('Generate cards') }}</span>
+                </div>
+            </div>
+
+            {% if statistics.classifier_agreement and statistics.classifier_agreement.cohens_kappa is defined %}
+            <div style="background: #1C2640; border: 1px solid #2A3550; border-radius: 6px; padding: 0.3em 0.6em; margin-top: 0.1in; font-size: 7.5pt;">
+                <strong style="color: #4DA8FF;">Classifier Agreement:</strong>
+                <span style="color: #F0F4F8;">{{ statistics.classifier_agreement.interpretation }}</span>
+                <span style="color: #8899B0;">(κ={{ statistics.classifier_agreement.cohens_kappa }}, {{ statistics.classifier_agreement.agreement_pct }}% match vs. VADER baseline, n={{ statistics.classifier_agreement.posts_compared }})</span>
+            </div>
+            {% endif %}
+
+            {% if all_photo_attributions %}
+            <p class="photo-credits">
+                Photos:
+                {% for attr in all_photo_attributions %}
+                {{ attr.photographer }} ({{ attr.source }}){% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="card-footer">
+            <span class="card-footer-brand"><span>signal</span>stream</span>
+            <span class="card-footer-meta">{{ report_date }} &middot; {{ branding.footer_text }}</span>
+        </div>
+    </div>
+
+</body>
+</html>

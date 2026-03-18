@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}About &mdash; Eston McKeague{% endblock %}
+
+{% block content %}
+<section class="about-page">
+    <div class="about-hero">
+        <h1 class="about-name">Eston McKeague</h1>
+        <p class="about-title">Communications Strategist &amp; Political Analyst</p>
+    </div>
+
+    <div class="about-bio">
+        <p>I work at the intersection of communications strategy and data-driven intelligence. With a background in political strategy and advocacy, I help organizations understand how public narratives form, shift, and can be shaped through evidence-based messaging.</p>
+        <p>My approach combines traditional strategic communications expertise with modern sentiment intelligence tools. I believe that the best communications strategies are built on a deep understanding of what people actually think and feel, not assumptions.</p>
+        <p>Signalstream is a tool born from this philosophy. It bridges the gap between raw social media data and the actionable insights that communications and marketing professionals need to make better decisions, faster.</p>
+    </div>
+
+    <div class="about-pillars">
+        <div class="about-pillar">
+            <p class="about-pillar-icon">01</p>
+            <h3>Strategic Communications</h3>
+            <p>Crafting narratives and messaging frameworks that resonate with target audiences and advance organizational objectives.</p>
+        </div>
+        <div class="about-pillar">
+            <p class="about-pillar-icon">02</p>
+            <h3>Sentiment Intelligence</h3>
+            <p>Turning unstructured social conversation into structured, actionable intelligence for campaign planning and brand management.</p>
+        </div>
+        <div class="about-pillar">
+            <p class="about-pillar-icon">03</p>
+            <h3>Advocacy &amp; Policy</h3>
+            <p>Navigating complex political landscapes with data-informed strategy, stakeholder mapping, and coalition building.</p>
+        </div>
+    </div>
+
+    <div class="about-tool">
+        <h2>Why Signalstream</h2>
+        <p>Most social listening tools give you dashboards. Signalstream gives you intelligence. It runs a full AI-powered analysis pipeline and delivers polished report cards that a communications manager can immediately use in a briefing, a pitch, or a strategy session.</p>
+        <p>Every report card is designed to answer one question clearly. No clutter, no noise, just signal.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Run an Analysis</a>
+    </div>
+</section>
+{% endblock %}

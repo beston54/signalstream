@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}History &mdash; signalstream{% endblock %}
+
+{% block content %}
+<section class="history-page">
+    <h1>Analysis History</h1>
+
+    {% if jobs %}
+    <div class="history-filters">
+        <input type="text" id="history-search" placeholder="Search by topic..." autocomplete="off">
+        <select id="history-status-filter">
+            <option value="all">All Statuses</option>
+            <option value="complete">Completed</option>
+            <option value="error">Error</option>
+            <option value="cancelled">Cancelled</option>
+        </select>
+    </div>
+
+    <div class="history-list" id="history-list">
+        {% for job in jobs %}
+        <div class="history-card" data-status="{{ job.status }}" data-topic="{{ job.topic | lower }}" data-job-id="{{ job.id }}">
+            <div class="history-header">
+                <h3>{{ job.topic }}</h3>
+                <span class="status-badge" data-status="{{ job.status }}">{{ job.status }}</span>
+            </div>
+            <div class="history-meta">
+                <span>{{ job.started_at[:16] | default('--') }}</span>
+                {% if job.post_count %}
+                <span>{{ job.post_count }} posts</span>
+                {% endif %}
+                <span>{{ job.time_range | default('week') }}</span>
+            </div>
+            <div class="history-actions">
+                {% if job.status == 'complete' and job.pdf_path %}
+                <a href="{{ url_for('download', job_id=job.id) }}" class="btn btn-sm btn-primary">Download PDF</a>
+                {% elif job.status in ('queued', 'collecting', 'analyzing', 'theming', 'generating') %}
+                <a href="{{ url_for('status', job_id=job.id) }}" class="btn btn-sm btn-secondary">View Progress</a>
+                {% elif job.status == 'error' %}
+                <span class="error-hint">{{ job.message[:80] }}</span>
+                {% endif %}
+                <button class="btn btn-sm btn-danger" onclick="deleteJob('{{ job.id }}', this)">Delete</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <p id="no-results" style="display:none; text-align:center; color:var(--text-muted); padding:40px 0; font-family:var(--font-serif);">No matching jobs found.</p>
+    {% else %}
+    <div class="empty-state">
+        <p>No analysis runs yet.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Start Your First Analysis</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    "use strict";
+
+    var searchInput = document.getElementById("history-search");
+    var statusFilter = document.getElementById("history-status-filter");
+    var noResults = document.getElementById("no-results");
+    if (!searchInput || !statusFilter) return;
+
+    function applyFilters() {
+        var query = searchInput.value.trim().toLowerCase();
+        var status = statusFilter.value;
+        var cards = document.querySelectorAll(".history-card");
+        var visible = 0;
+
+        cards.forEach(function (card) {
+            var matchesTopic = !query || card.getAttribute("data-topic").indexOf(query) !== -1;
+            var matchesStatus = status === "all" || card.getAttribute("data-status") === status;
+            if (matchesTopic && matchesStatus) {
+                card.style.display = "";
+                visible++;
+            } else {
+                card.style.display = "none";
+            }
+        });
+
+        if (noResults) {
+            noResults.style.display = visible === 0 && cards.length > 0 ? "block" : "none";
+        }
+    }
+
+    searchInput.addEventListener("input", applyFilters);
+    statusFilter.addEventListener("change", applyFilters);
+})();
+
+function deleteJob(jobId, btnEl) {
+    if (!confirm("Delete this job and its report?")) return;
+    btnEl.disabled = true;
+    btnEl.textContent = "Deleting...";
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var csrfToken = csrfMeta ? csrfMeta.getAttribute("content") : "";
+    fetch("/api/jobs/" + jobId, { method: "DELETE", headers: { "X-CSRFToken": csrfToken } })
+        .then(function (resp) { return resp.json(); })
+        .then(function (data) {
+            if (data.ok) {
+                var card = btnEl.closest(".history-card");
+                if (card) card.remove();
+                // Check if list is now empty
+                var remaining = document.querySelectorAll(".history-card");
+                if (remaining.length === 0) {
+                    var list = document.getElementById("history-list");
+                    if (list) list.style.display = "none";
+                    var filters = document.querySelector(".history-filters");
+                    if (filters) filters.style.display = "none";
+                    var noRes = document.getElementById("no-results");
+                    if (noRes) noRes.style.display = "none";
+                    var section = document.querySelector(".history-page");
+                    if (section) {
+                        var empty = document.createElement("div");
+                        empty.className = "empty-state";
+                        empty.innerHTML = '<p>No analysis runs yet.</p><a href="/" class="btn btn-primary">Start Your First Analysis</a>';
+                        section.appendChild(empty);
+                    }
+                }
+            } else {
+                btnEl.disabled = false;
+                btnEl.textContent = "Delete";
+                alert(data.error || "Could not delete job.");
+            }
+        })
+        .catch(function () {
+            btnEl.disabled = false;
+            btnEl.textContent = "Delete";
+            alert("Network error. Please try again.");
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+data/
+reports/
+logs/
+review_outputs/
+.git/
+.claude/
+__pycache__/
+*.pyc
+.env
+.hash_salt
+.email_key
+config.yaml

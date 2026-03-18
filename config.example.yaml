@@ -1,0 +1,179 @@
+# Reddit Intelligence System Configuration
+# =========================================
+# Copy this file to config.yaml and fill in your credentials
+
+# Reddit API Credentials
+# Set as environment variables (never store secrets in config files):
+#   REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET
+reddit:
+  user_agent: "SentimentAnalyzer/1.0"
+
+# Data Sources (combined into one report)
+sources:
+  reddit: true
+  x: false
+
+# X / GetXAPI Configuration
+# Set your key as an env var:  export X_API_BEARER_TOKEN='your-key-here'
+# GetXAPI keys (get-x-api-...) are auto-detected and routed to the GetXAPI gateway.
+# Also accepts: GETX_API_KEY, TWITTER_BEARER_TOKEN
+x: {}
+
+# Collector Backend
+# public_json = no API keys (free, unauthenticated; may be rate-limited)
+# praw = official Reddit API via PRAW (requires client_id/client_secret)
+# auto = use PRAW only if credentials are configured, otherwise public_json
+collector:
+  provider: "auto"
+  # Lower default for unauthenticated requests; increase cautiously.
+  public_json_requests_per_minute: 20
+  request_timeout_seconds: 20
+  max_retries: 4
+  retry_backoff_seconds: 2.0
+  fallback_to_praw_on_public_failure: true
+  # Smart subreddit discovery: finds relevant communities before searching
+  subreddit_discovery: true
+  max_subreddits_per_phrase: 8
+  min_subscribers: 1000
+
+# Search Parameters
+search:
+  # Optional single topic seed. When auto_expand=true, collectors will derive
+  # platform-specific queries (Reddit phrases + X raw boolean queries) from this.
+  topic: ""
+  auto_expand: false
+  expansion_count: 8
+  reddit_expansion_count: 8
+  x_expansion_count: 8
+  x_use_raw_queries: true
+
+  # Key phrases to search for (add your advocacy topics here)
+  # These remain supported and are used directly when auto_expand=false.
+  key_phrases:
+    - "world federalism"
+    - "energy transition"
+    - "climate policy"
+    - "renewable energy"
+
+  # Time range for posts: week, month, year, all
+  time_range: "week"
+
+  # Maximum posts to collect per phrase
+  max_posts_per_phrase: 50
+
+  # Minimum upvotes required (filters out very low engagement posts)
+  min_upvotes: 5
+
+  # Comment collection settings
+  comment_depth: 2
+  max_comments_per_post: 10
+
+# Language and Region Filtering
+filters:
+  # ISO 639-1 language codes: en, de, fr, es, etc.
+  # Empty list = all languages
+  languages: ["en", "de"]
+
+  # Region keywords to look for
+  # Empty list = all regions
+  regions: ["Europe", "Germany", "United States"]
+
+# Analysis Provider
+# provider: "claude" | "ollama" | "auto"
+# auto = use Claude if API key available, otherwise Ollama
+analysis:
+  provider: "auto"
+  claude:
+    model: "claude-haiku-4-5-20251001"
+    # Set ANTHROPIC_API_KEY as an environment variable
+
+  # Analysis unit settings
+  unit: "thread"
+  include_thread_context: true
+  max_comments_in_prompt: 6
+  max_replies_per_comment_in_prompt: 2
+  max_comment_chars: 280
+  max_thread_context_chars: 1600
+  include_engagement_context: true
+
+# Ollama Configuration (fallback / local mode)
+# Ollama must be running locally
+ollama:
+  base_url: "http://localhost:11434"
+  model: "gemma2:9b"
+  timeout: 120  # seconds per request
+  max_retries: 3
+
+# Output Settings
+output:
+  # Replace usernames with "User A", "User B", etc.
+  anonymize_usernames: true
+
+  # Delete raw data after this many days (GDPR compliance)
+  data_retention_days: 30
+
+# Report Branding (text-only)
+branding:
+  company_name: "Your Company Name"
+  tagline: "Social Media Intelligence"
+  footer_text: "Confidential"
+
+# Rate Limiting
+rate_limits:
+  # Reddit allows ~60 requests per minute
+  reddit_requests_per_minute: 60
+
+# Design System Configuration (dark navy theme)
+design_system:
+  colors:
+    primary: "#38BDF8"
+    secondary: "#A78BFA"
+    accent: "#F97316"
+    background: "#0F172A"
+    background_warm: "#1E293B"
+    text_primary: "#F1F5F9"
+    text_secondary: "#94A3B8"
+    chart_palette:
+      - "#38BDF8"
+      - "#A78BFA"
+      - "#F97316"
+      - "#34D399"
+      - "#FB7185"
+      - "#F2CC8F"
+      - "#818CF8"
+
+  typography:
+    headline_font: "DM Sans"
+    body_font: "Source Serif 4"
+    annotation_font: "Caveat"
+    font_dir: "assets/fonts"
+
+  report:
+    max_photos: 5
+    chart_dpi: 150
+    chart_width_inches: 6.5
+    chart_height_inches: 3.5
+
+# Image API Configuration
+# Prefer environment variables over storing keys here:
+#   UNSPLASH_ACCESS_KEY=...
+#   PEXELS_API_KEY=...
+# Register at https://unsplash.com/developers and https://www.pexels.com/api/
+image_apis:
+# Set env vars: UNSPLASH_ACCESS_KEY, PEXELS_API_KEY
+  unsplash:
+    base_url: "https://api.unsplash.com"
+    enabled: true
+  pexels:
+    base_url: "https://api.pexels.com/v1"
+    enabled: true
+  cache:
+    directory: "assets/images/cache"
+    manifest_file: "assets/images/cache_manifest.json"
+    max_cache_age_days: 30
+
+# Logging Configuration
+logging:
+  # Level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+  file: "logs/reddit_intelligence.log"

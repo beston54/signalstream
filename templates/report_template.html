@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Intelligence Report - {{ report_date }}</title>
+</head>
+<body>
+
+    <!-- ============================================================
+         Page 1: Cover — Full-impact hero with big stats
+         ============================================================ -->
+    <div class="page cover-page">
+        {% if photos and photos.cover %}
+        <div class="photo-panel hero cover-photo-panel">
+            <img src="{{ photos.cover.data_uri }}" alt="{{ photos.cover.alt }}">
+            {% if photo_overlays and photo_overlays.cover %}
+            <div class="photo-panel-overlay">
+                <p class="photo-panel-kicker">{{ photo_overlays.cover.kicker }}</p>
+                <h2 class="photo-panel-headline">{{ photo_overlays.cover.headline }}</h2>
+                {% if photo_overlays.cover.summary %}
+                <p class="photo-panel-summary">{{ photo_overlays.cover.summary }}</p>
+                {% endif %}
+                {% if photo_overlays.cover.quote %}
+                <blockquote class="photo-panel-quote">
+                    <p>"{{ photo_overlays.cover.quote }}"</p>
+                    {% if photo_overlays.cover.quote_meta %}
+                    <cite>{{ photo_overlays.cover.quote_meta }}</cite>
+                    {% endif %}
+                </blockquote>
+                {% endif %}
+                {% if photo_overlays.cover.chips %}
+                <div class="photo-panel-chips">
+                    {% for chip in photo_overlays.cover.chips %}
+                    <span class="photo-chip">{{ chip }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            <p class="photo-attribution on-photo">Photo by {{ photos.cover.photographer }} on {{ photos.cover.source }}</p>
+        </div>
+        {% endif %}
+
+        <header class="cover-header">
+            <h1 class="company-name">{{ branding.company_name }}</h1>
+            <p class="tagline">{{ branding.tagline }}</p>
+            <p class="report-title">Community Intelligence Report</p>
+            <p class="report-date">{{ report_date }}</p>
+        </header>
+
+        {% set sent_items = statistics.sentiment_distribution.items()|sort(attribute='1', reverse=true)|list %}
+        {% set emo_items = statistics.emotion_distribution.items()|sort(attribute='1', reverse=true)|list %}
+        <div class="callout-row">
+            {% if sent_items %}
+            {% set dom_sent_pct = (sent_items[0][1] / statistics.total_posts * 100)|round(0)|int if statistics.total_posts > 0 else 0 %}
+            <div class="data-callout">
+                <span class="callout-value">{{ dom_sent_pct }}%</span>
+                <span class="callout-label">{{ sent_items[0][0]|capitalize }}</span>
+            </div>
+            {% endif %}
+            {% if emo_items %}
+            {% set dom_emo_pct = (emo_items[0][1] / statistics.total_posts * 100)|round(0)|int if statistics.total_posts > 0 else 0 %}
+            <div class="data-callout">
+                <span class="callout-value">{{ dom_emo_pct }}%</span>
+                <span class="callout-label">{{ emo_items[0][0]|capitalize }}</span>
+            </div>
+            {% endif %}
+            <div class="data-callout">
+                <span class="callout-value">{{ statistics.phrase_count }}</span>
+                <span class="callout-label">{{ "Topic" if statistics.phrase_count|int == 1 else "Topics" }} Tracked</span>
+            </div>
+        </div>
+        {% set community_count = (statistics.community_breakdown or statistics.subreddit_breakdown)|length %}
+        <p style="font-size: 6.5pt; color: #64748B; text-align: center; margin-top: -8px;">Based on {{ statistics.total_posts }} posts across {{ community_count }} {{ "community" if community_count == 1 else "communities" }}</p>
+
+        {% if executive_summary and executive_summary.narrative %}
+        <div class="executive-narrative" style="margin: 0 0.65in;">
+            <p>{{ executive_summary.narrative }}</p>
+        </div>
+        {% endif %}
+
+        <section class="emotion-overview">
+            <h3>Emotional Landscape</h3>
+            <div class="emotion-bars">
+                {% for emotion, count in statistics.emotion_distribution.items() %}
+                {% set percentage = (count / statistics.total_posts * 100)|round(1) if statistics.total_posts > 0 else 0 %}
+                <div class="emotion-row">
+                    <span class="emotion-label" style="color: {{ emotion_colors.get(emotion, '#94A3B8') }}">{{ emotion|capitalize }}</span>
+                    <div class="emotion-bar-container">
+                        <div class="emotion-bar" style="width: {{ percentage }}%; background-color: {{ emotion_colors.get(emotion, '#94A3B8') }}"></div>
+                    </div>
+                    <span class="emotion-count">{{ count }} ({{ percentage }}%)</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        {% if statistics.sentiment_distribution %}
+        <section class="sentiment-secondary">
+            <h4>Sentiment Summary</h4>
+            <div class="sentiment-bars">
+                {% for sentiment, count in statistics.sentiment_distribution.items() %}
+                {% set percentage = (count / statistics.total_posts * 100)|round(1) if statistics.total_posts > 0 else 0 %}
+                <div class="sentiment-row">
+                    <span class="sentiment-label {{ sentiment }}">{{ sentiment|capitalize }}</span>
+                    <div class="sentiment-bar-container">
+                        <div class="sentiment-bar {{ sentiment }}" style="width: {{ percentage }}%"></div>
+                    </div>
+                    <span class="sentiment-count">{{ count }} ({{ percentage }}%)</span>
+                </div>
+                {% endfor %}
+            </div>
+            <p style="font-size: 6.5pt; color: #64748B; margin-top: 2px;">n={{ statistics.total_posts }} posts. Includes positive, negative, neutral, and mixed categories.</p>
+        </section>
+        {% endif %}
+
+        <footer class="page-footer">
+            <span class="confidential">{{ branding.footer_text }}</span>
+            <span class="page-number">Page 1</span>
+        </footer>
+    </div>
+
+    <!-- ============================================================
+         Page 2: Sentiment Deep Dive + Community Engagement
+         ============================================================ -->
+    <div class="page">
+        <header class="section-header">
+            <h2>Emotional Deep Dive</h2>
+            <p class="section-subtitle">Understanding what your audience feels</p>
+        </header>
+
+        {% if charts and charts.emotion_distribution %}
+        <div class="chart-container">
+            <img src="{{ charts.emotion_distribution }}" alt="Emotion Distribution">
+            <p class="chart-caption">Primary emotional tone across all posts</p>
+        </div>
+        {% endif %}
+
+        {% if charts and charts.sentiment_distribution %}
+        <div class="chart-container compact-chart">
+            <img src="{{ charts.sentiment_distribution }}" alt="Sentiment Distribution">
+            <p class="chart-caption">Overall sentiment polarity</p>
+        </div>
+        {% endif %}
+
+        {% if charts and charts.subreddit_distribution %}
+        <div class="chart-container compact-chart">
+            <img src="{{ charts.subreddit_distribution }}" alt="Community Distribution">
+            <p class="chart-caption">Where the conversation is happening</p>
+        </div>
+        {% endif %}
+
+        {% if statistics.region_breakdown %}
+        <section>
+            <h3>Regional Breakdown</h3>
+            <table class="compact-table">
+                <thead>
+                    <tr>
+                        <th>Region</th>
+                        <th>Posts</th>
+                        <th>Share</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for region, count in statistics.region_breakdown.items() %}
+                    {% set percentage = (count / statistics.total_posts * 100)|round(1) if statistics.total_posts > 0 else 0 %}
+                    <tr>
+                        <td>{{ region }}</td>
+                        <td>{{ count }}</td>
+                        <td>{{ percentage }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
+
+        <footer class="page-footer">
+            <span class="confidential">{{ branding.footer_text }}</span>
+            <span class="page-number">Page 2</span>
+        </footer>
+    </div>
+
+    <!-- ============================================================
+         Page 3: Key Themes & Topics
+         ============================================================ -->
+    <div class="page">
+        <header class="section-header">
+            <h2>Key Themes &amp; Topics</h2>
+            <p class="section-subtitle">What the community is talking about</p>
+        </header>
+
+        {% if photos and photos.themes %}
+        <div class="photo-panel feature">
+            <img src="{{ photos.themes.data_uri }}" alt="{{ photos.themes.alt }}">
+            {% if photo_overlays and photo_overlays.themes %}
+            <div class="photo-panel-overlay">
+                <p class="photo-panel-kicker">{{ photo_overlays.themes.kicker }}</p>
+                <h3 class="photo-panel-headline">{{ photo_overlays.themes.headline }}</h3>
+                {% if photo_overlays.themes.summary %}
+                <p class="photo-panel-summary">{{ photo_overlays.themes.summary }}</p>
+                {% endif %}
+                {% if photo_overlays.themes.quote %}
+                <blockquote class="photo-panel-quote">
+                    <p>"{{ photo_overlays.themes.quote }}"</p>
+                    {% if photo_overlays.themes.quote_meta %}
+                    <cite>{{ photo_overlays.themes.quote_meta }}</cite>
+                    {% endif %}
+                </blockquote>
+                {% endif %}
+                {% if photo_overlays.themes.chips %}
+                <div class="photo-panel-chips">
+                    {% for chip in photo_overlays.themes.chips %}
+                    <span class="photo-chip">{{ chip }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            <p class="photo-attribution on-photo">Photo by {{ photos.themes.photographer }} on {{ photos.themes.source }}</p>
+        </div>
+        {% endif %}
+
+        {% set theme_items = themes_by_phrase.items()|list %}
+        {% set total_major_themes = [] %}
+        {% for _phrase, _tdata in theme_items %}
+            {% for _t in _tdata.get("major_themes", []) %}
+                {% if total_major_themes.append(1) %}{% endif %}
+            {% endfor %}
+        {% endfor %}
+
+        {% if total_major_themes|length < 3 %}
+        <div class="limited-data-notice" style="text-align:center; padding:2em 1em; color:var(--text-secondary, #8899B0);">
+            <p style="font-size:1.1em; margin-bottom:0.5em;">Limited thematic data available</p>
+            <p style="font-size:0.85em;">The sample size was too small to identify robust themes. Consider increasing the collection scope for richer insights.</p>
+        </div>
+        {% endif %}
+
+        {% set theme_section_limit = 3 if (photos and photos.themes) else 4 %}
+        {% set theme_card_limit = 2 if not (photos and photos.themes) else 1 %}
+        {% for phrase, themes in theme_items[:theme_section_limit] %}
+        <section class="theme-section">
+            <h3 class="phrase-title">{{ phrase|title }}</h3>
+            <p class="post-count">Based on {{ themes.post_count }} {{ "post" if themes.post_count|int == 1 else "posts" }}</p>
+
+            {% if themes.major_themes %}
+            {% for theme in themes.major_themes[:theme_card_limit] %}
+            <div class="insight-card">
+                <span class="theme-name">{{ theme.theme }}</span>
+                <span class="theme-pct">{{ theme.percentage }}%</span>
+                <div class="theme-bar-wrapper">
+                    <div class="theme-bar" style="width: {{ theme.percentage }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if themes.sentiment_summary and themes.sentiment_summary.narrative %}
+            <p class="narrative" style="margin-top: 8px;">
+                <span class="sentiment-badge {{ themes.sentiment_summary.overall }}">{{ themes.sentiment_summary.overall|capitalize }}</span>
+                {{ themes.sentiment_summary.narrative }}
+            </p>
+            {% endif %}
+
+        </section>
+        {% endfor %}
+
+        {% if theme_items|length > theme_section_limit %}
+        <p class="theme-page-note">
+            Additional topics are included in the underlying analysis dataset.
+        </p>
+        {% endif %}
+
+        {% if charts and charts.theme_clusters %}
+        <div class="chart-container compact-chart">
+            <img src="{{ charts.theme_clusters }}" alt="Theme Prevalence">
+            <p class="chart-caption">Theme prevalence across all topics</p>
+        </div>
+        {% endif %}
+
+        <p style="font-size: 6.5pt; color: #64748B; margin-top: 4px; font-style: italic;">Posts may appear in multiple themes; percentages reflect the share of posts mentioning each theme and may sum to more than 100%.</p>
+
+        <footer class="page-footer">
+            <span class="confidential">{{ branding.footer_text }}</span>
+            <span class="page-number">Page 3</span>
+        </footer>
+    </div>
+
+    <!-- ============================================================
+         Page 4: Community Lens
+         ============================================================ -->
+    <div class="page">
+        <header class="section-header">
+            <h2>Community Lens</h2>
+            <p class="section-subtitle">How different communities feel about this</p>
+        </header>
+
+        {% if community_lens and community_lens.summary_metrics %}
+        <div class="callout-row community-callouts">
+            <div class="data-callout">
+                <span class="callout-value">{{ community_lens.summary_metrics.community_count }}</span>
+                <span class="callout-label">Communities Compared</span>
+            </div>
+            <div class="data-callout">
+                <span class="callout-value">{{ community_lens.summary_metrics.certain_share_overall }}%</span>
+                <span class="callout-label">High-Confidence Data</span>
+            </div>
+            <div class="data-callout">
+                <span class="callout-value">{{ community_lens.summary_metrics.thread_context_share_pct }}%</span>
+                <span class="callout-label">Thread-Aware</span>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if community_lens and community_lens.intro_narrative %}
+        <div class="executive-narrative">
+            <p>{{ community_lens.intro_narrative }}</p>
+        </div>
+        {% endif %}
+
+        {% if community_lens and community_lens.rows %}
+        {% set community_rows = community_lens.rows[:5] %}
+
+        <section class="community-stack-section">
+            <h3>Sentiment Mix</h3>
+            <div class="community-stack-legend">
+                <span class="legend-chip"><span class="legend-dot positive"></span> Positive</span>
+                <span class="legend-chip"><span class="legend-dot neutral"></span> Neutral</span>
+                <span class="legend-chip"><span class="legend-dot mixed"></span> Mixed</span>
+                <span class="legend-chip"><span class="legend-dot negative"></span> Negative</span>
+            </div>
+            <div class="community-stack-chart">
+                {% for row in community_rows[:5] %}
+                <div class="community-stack-row">
+                    <div class="community-stack-label">{{ row.community }}</div>
+                    <div class="community-stack-track">
+                        {% set p_pos = row.sentiment_percentages.get('positive', 0) %}
+                        {% set p_neu = row.sentiment_percentages.get('neutral', 0) %}
+                        {% set p_mix = row.sentiment_percentages.get('mixed', 0) %}
+                        {% set p_neg = row.sentiment_percentages.get('negative', 0) %}
+                        {% if p_pos > 0 %}<span class="community-stack-segment positive" style="width: {{ p_pos }}%"></span>{% endif %}
+                        {% if p_neu > 0 %}<span class="community-stack-segment neutral" style="width: {{ p_neu }}%"></span>{% endif %}
+                        {% if p_mix > 0 %}<span class="community-stack-segment mixed" style="width: {{ p_mix }}%"></span>{% endif %}
+                        {% if p_neg > 0 %}<span class="community-stack-segment negative" style="width: {{ p_neg }}%"></span>{% endif %}
+                    </div>
+                    <div class="community-stack-meta">
+                        {{ row.dominant_sentiment|capitalize }} {{ row.dominant_share_pct }}%
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        {% if community_lens.highlight_quotes %}
+        <section>
+            <h3>Community Voices</h3>
+            <div class="community-voice-grid">
+                {% for item in community_lens.highlight_quotes %}
+                <div class="community-voice-card">
+                    <div class="community-voice-meta">
+                        <span class="community-voice-label">{{ item.community }}</span>
+                        <span class="sentiment-badge {{ item.sentiment }}">{{ item.sentiment|capitalize }}</span>
+                    </div>
+                    <p class="community-voice-quote">"{{ item.quote }}"</p>
+                    <p class="community-voice-footnote">
+                        {{ item.confidence|capitalize }} confidence{% if item.engagement_raw %} · {{ item.engagement_raw }} engagement{% endif %}{% if item.source_platform %} · {% if item.source_platform == 'x' %}X{% else %}{{ item.source_platform|capitalize }}{% endif %}{% endif %}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+        {% endif %}
+
+        {% if statistics.engagement_metrics %}
+        <section>
+            <h3>Engagement Quality</h3>
+            <div class="callout-row community-callouts">
+                <div class="data-callout">
+                    <span class="callout-value">{{ statistics.engagement_metrics.avg_comment_length|round(0)|int }}</span>
+                    <span class="callout-label">Avg Comment Length</span>
+                </div>
+                <div class="data-callout">
+                    <span class="callout-value">{{ (statistics.engagement_metrics.avg_upvote_ratio * 100)|round(0)|int }}%</span>
+                    <span class="callout-label">Avg Upvote Ratio</span>
+                </div>
+                <div class="data-callout">
+                    <span class="callout-value">{{ statistics.engagement_metrics.posts_with_awards }}</span>
+                    <span class="callout-label">Awarded Posts</span>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Most Engaged Posts (compact) -->
+        <section>
+            <h3>Top Posts by Engagement</h3>
+            <table class="compact-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Community</th>
+                        <th>Engagement</th>
+                        <th>Sentiment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in statistics.top_posts_by_engagement[:6] %}
+                    <tr>
+                        <td class="post-title">
+                            {% if post.url %}
+                            <a href="{{ post.url }}">{{ post.title[:50] }}{% if post.title|length > 50 %}...{% endif %}</a>
+                            {% else %}
+                            {{ post.title[:50] }}{% if post.title|length > 50 %}...{% endif %}
+                            {% endif %}
+                        </td>
+                        <td>{{ post.community_label or post.subreddit }}</td>
+                        <td>{{ post.engagement_signal if post.engagement_signal is defined else post.upvotes }}</td>
+                        <td><span class="sentiment-badge {{ post.sentiment }}">{{ post.sentiment }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <footer class="page-footer">
+            <span class="confidential">{{ branding.footer_text }}</span>
+            <span class="page-number">Page 4</span>
+        </footer>
+    </div>
+
+    <!-- ============================================================
+         Page 5: Strategy + What's Working / What's Not
+         ============================================================ -->
+    <div class="page">
+        <header class="section-header">
+            <h2>Emotional Messaging Playbook</h2>
+            <p class="section-subtitle">Strategies tailored to what your audience feels</p>
+        </header>
+
+        {% if photos and photos.next_steps %}
+        <div class="photo-panel banner">
+            <img src="{{ photos.next_steps.data_uri }}" alt="{{ photos.next_steps.alt }}">
+            {% if photo_overlays and photo_overlays.next_steps %}
+            <div class="photo-panel-overlay compact-overlay">
+                <p class="photo-panel-kicker">{{ photo_overlays.next_steps.kicker }}</p>
+                <h3 class="photo-panel-headline">{{ photo_overlays.next_steps.headline }}</h3>
+                {% if photo_overlays.next_steps.summary %}
+                <p class="photo-panel-summary">{{ photo_overlays.next_steps.summary }}</p>
+                {% endif %}
+                {% if photo_overlays.next_steps.chips %}
+                <div class="photo-panel-chips">
+                    {% for chip in photo_overlays.next_steps.chips %}
+                    <span class="photo-chip">{{ chip }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            <p class="photo-attribution on-photo">Photo by {{ photos.next_steps.photographer }} on {{ photos.next_steps.source }}</p>
+        </div>
+        {% endif %}
+
+        {% if recommendations and recommendations.entries %}
+        {% set recommendation_limit = 3 if (photos and photos.next_steps) else 4 %}
+        {% for rec in recommendations.entries[:recommendation_limit] %}
+        <div class="recommendation-card emotion-rec-card" style="border-left-color: {{ emotion_colors.get(rec.emotion, '#F97316') }}">
+            <div class="rec-header">
+                <span class="emotion-badge" style="background-color: {{ emotion_colors.get(rec.emotion, '#F97316') }}; color: #0F172A;">{{ rec.emotion|capitalize }}</span>
+                <span class="rec-prevalence">{{ rec.prevalence_pct }}% of posts</span>
+            </div>
+            <h4 class="rec-strategy-title">{{ rec.title }}</h4>
+            <p>{{ rec.description }}</p>
+            <div class="rec-tone-callout">
+                <strong>Tone:</strong> {{ rec.tone }}
+            </div>
+            {% if rec.example_phrases %}
+            <div class="rec-phrase-chips">
+                {% for phrase in rec.example_phrases %}
+                <span class="rec-phrase-chip">"{{ phrase }}"</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="rec-evidence">
+                {{ rec.evidence }}
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if transparency %}
+        <div class="transparency-grid">
+            <div class="transparency-block working">
+                <h3>What's Working</h3>
+                {% if transparency.working %}
+                {% for item in transparency.working %}
+                <div class="transparency-item">
+                    <p>{{ item.finding }}</p>
+                    <span class="evidence-tag">{{ item.evidence }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p style="font-size: 9pt; color: #64748B;">Insufficient data for positive indicators.</p>
+                {% endif %}
+            </div>
+
+            <div class="transparency-block not-working">
+                <h3>Needs Attention</h3>
+                {% if transparency.needs_attention %}
+                {% for item in transparency.needs_attention %}
+                <div class="transparency-item">
+                    <p>{{ item.finding }}</p>
+                    <span class="evidence-tag">{{ item.evidence }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p style="font-size: 9pt; color: #64748B;">No significant concerns identified.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <footer class="page-footer">
+            <span class="confidential">{{ branding.footer_text }}</span>
+            <span class="page-number">Page 5</span>
+        </footer>
+    </div>
+
+    <!-- ============================================================
+         Page 6: Next Steps + Novel Ideas + Methodology
+         ============================================================ -->
+    <div class="page">
+        <header class="section-header">
+            <h2>Next Steps &amp; Methodology</h2>
+            <p class="section-subtitle">Action items and how we got here</p>
+        </header>
+
+        {% if next_steps %}
+        <section>
+            <h3>Priority Actions</h3>
+            {% for step in next_steps[:4] %}
+            <div class="next-step-card">
+                <span class="step-number">{{ loop.index }}</span>
+                <h4>{{ step.action }}</h4>
+                <p>{{ step.rationale }}</p>
+                <div class="step-meta">
+                    <span class="priority-badge {{ step.priority }}">{{ step.priority }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        <hr class="section-divider">
+
+        <!-- Novel Ideas (compact) -->
+        <section>
+            <h3>Novel Ideas from the Community</h3>
+            {% for phrase, themes in themes_by_phrase.items() %}
+            {% if themes.novel_ideas %}
+            <div class="ideas-group">
+                <h4>{{ phrase|title }}</h4>
+                <ul class="ideas-list">
+                    {% for idea in themes.novel_ideas[:2] %}
+                    <li>{{ idea }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </section>
+
+        <hr class="section-divider">
+
+        {% if methodology and methodology.scope and methodology.scope.mixed_provider_warning %}
+        <div style="background: #3D1F1F; border: 1px solid #FF7B8E; border-radius: 6px; padding: 0.5em 0.8em; margin-bottom: 0.5em; font-size: 8.5pt; color: #FFB4B4;">
+            <strong>Mixed Provider Notice:</strong> Multiple AI models ({{ methodology.scope.providers_used|join(', ') }}) contributed to this analysis due to provider failover. Classification biases may differ between models.
+        </div>
+        {% endif %}
+
+        <!-- Methodology (compact) -->
+        <section>
+            <h3>Methodology</h3>
+            <div class="methodology-steps">
+                {% if methodology and methodology.steps %}
+                {% for step in methodology.steps %}
+                <div class="method-step">
+                    <span class="step-icon">{{ loop.index }}</span>
+                    <span class="step-name">{{ step.name }}</span>
+                    <span class="step-desc">{{ step.desc }}</span>
+                </div>
+                {% if not loop.last %}
+                <span class="step-arrow">&rarr;</span>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+            </div>
+
+            <table class="scope-table compact-table">
+                <tbody>
+                    <tr>
+                        <th>Topics</th>
+                        <td>
+                            {% for phrase in statistics.phrases_analyzed %}
+                            {{ phrase }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Period</th>
+                        <td>{{ statistics.date_range.start[:10] if statistics.date_range.start else 'N/A' }} to {{ statistics.date_range.end[:10] if statistics.date_range.end else 'N/A' }}</td>
+                    </tr>
+                    {% if methodology and methodology.scope and methodology.scope.model_used %}
+                    <tr>
+                        <th>AI Model</th>
+                        <td>{{ methodology.scope.model_used }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </section>
+
+        {% if closing_narrative %}
+        <div class="report-closing">
+            <p>{{ closing_narrative }}</p>
+        </div>
+        {% endif %}
+
+        {% if all_photo_attributions %}
+        <div class="photo-credits">
+            <h4>Photo Credits</h4>
+            {% for photo in all_photo_attributions %}
+            <p class="credit-line">{{ photo.description }}: {{ photo.photographer }} via {{ photo.source }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <footer class="page-footer">
+            <span class="confidential">{{ branding.footer_text }}</span>
+            <span class="page-number">Page 6</span>
+        </footer>
+    </div>
+
+</body>
+</html>

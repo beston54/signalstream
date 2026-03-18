@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}signalstream &mdash; Compare Topics{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 720px; margin: 2rem auto; padding: 0 1.5rem;">
+    <div class="hero" style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="font-family: 'IBM Plex Serif', serif; font-size: 1.8rem; color: #F0F4F8;">Compare Topics</h1>
+        <p style="color: #8899B0; font-size: 0.95rem;">Run two analyses side by side and see how sentiment differs.</p>
+    </div>
+
+    <form action="/compare" method="POST" id="compare-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div>
+                <label style="color: #8899B0; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Topic A</label>
+                <input type="text" name="topic_a" placeholder="e.g., Tesla" required
+                    style="width: 100%; padding: 0.75rem; background: #161E2E; border: 1px solid #2A3550; border-radius: 8px; color: #F0F4F8; font-size: 1rem;">
+            </div>
+            <div>
+                <label style="color: #8899B0; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Topic B</label>
+                <input type="text" name="topic_b" placeholder="e.g., Rivian" required
+                    style="width: 100%; padding: 0.75rem; background: #161E2E; border: 1px solid #2A3550; border-radius: 8px; color: #F0F4F8; font-size: 1rem;">
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem;">
+            <label style="color: #8899B0; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">Time Range</label>
+            <select name="time_range" style="width: 100%; padding: 0.75rem; background: #161E2E; border: 1px solid #2A3550; border-radius: 8px; color: #F0F4F8;">
+                <option value="week">Past Week</option>
+                <option value="month" selected>Past Month</option>
+                <option value="year">Past Year</option>
+                <option value="all">All Time</option>
+            </select>
+        </div>
+
+        <button type="submit" style="margin-top: 1.5rem; width: 100%; padding: 0.85rem; background: #4DA8FF; color: #0C1220; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;">
+            Compare Topics
+        </button>
+    </form>
+
+    {% if comparison %}
+    <div style="margin-top: 2rem;">
+        <h2 style="font-family: 'IBM Plex Serif', serif; font-size: 1.3rem; color: #F0F4F8; margin-bottom: 1rem;">Comparison Results</h2>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            {% for side in ['a', 'b'] %}
+            {% set data = comparison[side] %}
+            <div style="background: #161E2E; border-radius: 12px; padding: 1.25rem; border: 1px solid #2A3550;">
+                <h3 style="color: #4DA8FF; font-size: 1rem; margin-bottom: 0.75rem;">{{ data.topic }}</h3>
+                <div style="font-size: 0.85rem; color: #8899B0; margin-bottom: 0.5rem;">{{ data.post_count }} posts · {{ data.community_count }} communities</div>
+
+                <div style="margin-top: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span style="color: #5DD9A5; font-size: 0.9rem;">Positive {{ data.positive_pct }}%</span>
+                        <span style="color: #FF7B8E; font-size: 0.9rem;">Negative {{ data.negative_pct }}%</span>
+                    </div>
+                    <div style="height: 8px; background: #0C1220; border-radius: 4px; overflow: hidden; display: flex;">
+                        <div style="width: {{ data.positive_pct }}%; background: #5DD9A5;"></div>
+                        <div style="width: {{ data.neutral_pct }}%; background: #8899B0;"></div>
+                        <div style="width: {{ data.negative_pct }}%; background: #FF7B8E;"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 0.75rem; font-size: 0.85rem;">
+                    <div style="color: #F0F4F8;">Dominant: <span style="color: #FFB547;">{{ data.dominant_emotion|capitalize }}</span> ({{ data.dominant_emotion_pct }}%)</div>
+                </div>
+
+                {% if data.themes %}
+                <div style="margin-top: 0.75rem;">
+                    <div style="font-size: 0.75rem; color: #566580; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem;">Top Themes</div>
+                    {% for theme in data.themes[:3] %}
+                    <div style="font-size: 0.8rem; color: #8899B0; margin-bottom: 0.2rem;">&#8226; {{ theme }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if data.job_id %}
+                <a href="/status/{{ data.job_id }}" style="display: inline-block; margin-top: 0.75rem; font-size: 0.8rem; color: #4DA8FF; text-decoration: none;">View Full Report &rarr;</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if comparison.delta %}
+        <div style="background: #161E2E; border-radius: 12px; padding: 1.25rem; border: 1px solid #2A3550; margin-top: 1rem;">
+            <h3 style="color: #FFB547; font-size: 0.9rem; margin-bottom: 0.5rem;">Key Differences</h3>
+            <div style="font-size: 0.85rem; color: #F0F4F8;">{{ comparison.delta }}</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

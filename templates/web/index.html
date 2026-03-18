@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}signalstream &mdash; Social Intelligence, Distilled.{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1 class="hero-title">Social intelligence,<span class="highlight">distilled.</span></h1>
+    <p class="hero-subtitle">Enter a topic and we'll scan social platforms, analyze sentiment with AI, and generate a set of polished 4:5 report cards ready to share.</p>
+</section>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<section class="form-card">
+    <form method="POST" action="{{ url_for('analyze') }}" class="analysis-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label for="topic">Search Phrases</label>
+            <input
+                type="text"
+                id="topic"
+                name="topic"
+                placeholder='e.g. "world federalism", climate policy, renewable energy'
+                required
+                autocomplete="off"
+            >
+            <p class="form-hint">Separate multiple phrases with commas. We'll discover relevant communities for each phrase.</p>
+        </div>
+
+        <div class="form-group">
+            <label for="time_range">Time Range</label>
+            <select id="time_range" name="time_range">
+                <option value="week" selected>Past Week</option>
+                <option value="month">Past Month</option>
+                <option value="year">Past Year</option>
+                <option value="all">All Time</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+            <button type="button" class="advanced-toggle" id="advanced-toggle" aria-expanded="false">
+                <span class="toggle-arrow">&#9654;</span> Advanced Settings
+            </button>
+            <div class="advanced-settings" id="advanced-settings">
+                <div class="form-row" style="margin-bottom:16px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="languages">Language Filter</label>
+                        <input type="text" id="languages" name="languages" placeholder="e.g. en, de, fr" value="{{ defaults.languages if defaults else '' }}" autocomplete="off">
+                        <p class="form-hint">ISO 639-1 codes, comma-separated. Leave empty for all.</p>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="regions">Region Filter</label>
+                        <input type="text" id="regions" name="regions" placeholder="e.g. Europe, United States" value="{{ defaults.regions if defaults else '' }}" autocomplete="off">
+                        <p class="form-hint">Region keywords, comma-separated. Leave empty for all.</p>
+                    </div>
+                </div>
+                <div class="form-group" style="max-width:200px; margin-bottom:0;">
+                    <label for="max_posts_per_phrase">Max Posts Per Phrase</label>
+                    <input type="number" id="max_posts_per_phrase" name="max_posts_per_phrase" min="1" max="1000" value="{{ defaults.max_posts_per_phrase if defaults else 100 }}">
+                </div>
+            </div>
+        </div>
+
+        <p class="form-error" id="form-error" style="display:none; color:var(--rose, #FF7B8E); margin-bottom:0.75rem;"></p>
+        <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+            Run Analysis
+        </button>
+    </form>
+
+    <script>
+    (function() {
+        var form = document.querySelector('.analysis-form');
+        var btn = document.getElementById('submit-btn');
+        var err = document.getElementById('form-error');
+        if (!form || !btn) return;
+        form.addEventListener('submit', function(e) {
+            var topic = document.getElementById('topic').value.trim();
+            if (!topic) {
+                e.preventDefault();
+                err.textContent = 'Please enter at least one search phrase.';
+                err.style.display = 'block';
+                return;
+            }
+            err.style.display = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="btn-spinner"></span> Starting analysis...';
+        });
+
+        // Advanced settings toggle
+        var toggle = document.getElementById('advanced-toggle');
+        var panel = document.getElementById('advanced-settings');
+        if (toggle && panel) {
+            toggle.addEventListener('click', function() {
+                var isOpen = panel.classList.toggle('open');
+                toggle.classList.toggle('open', isOpen);
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+        }
+    })();
+    </script>
+</section>
+
+<section class="card-gallery">
+    <p class="card-gallery-label">Your output: 7 ready-to-share cards</p>
+    <div class="card-gallery-row">
+        <div class="card-preview-thumb">
+            <span class="card-preview-kicker">Cover</span>
+            <span class="card-preview-title">Executive Snapshot</span>
+            <div style="flex:1"></div>
+            <div class="card-preview-bar" style="background: var(--blue); width: 60%"></div>
+            <div class="card-preview-bar" style="background: var(--violet); width: 40%; margin-top: 3px"></div>
+            <div style="height: 8px"></div>
+            <span class="card-preview-footer">signalstream</span>
+        </div>
+        <div class="card-preview-thumb">
+            <span class="card-preview-kicker">Emotions</span>
+            <span class="card-preview-title">Emotional Landscape</span>
+            <div style="flex:1"></div>
+            <div class="card-preview-bar" style="background: var(--green); width: 70%"></div>
+            <div class="card-preview-bar" style="background: var(--blue); width: 55%; margin-top: 3px"></div>
+            <div class="card-preview-bar" style="background: var(--amber); width: 30%; margin-top: 3px"></div>
+            <div style="height: 8px"></div>
+            <span class="card-preview-footer">signalstream</span>
+        </div>
+        <div class="card-preview-thumb">
+            <span class="card-preview-kicker">Sentiment</span>
+            <span class="card-preview-title">Sentiment Split</span>
+            <div style="flex:1"></div>
+            <div style="display:flex; gap:4px; align-items:flex-end; height: 24px;">
+                <div style="flex:1; height:100%; background: var(--green); border-radius: 2px"></div>
+                <div style="flex:1; height:60%; background: var(--text-dim); border-radius: 2px"></div>
+                <div style="flex:1; height:30%; background: var(--rose); border-radius: 2px"></div>
+            </div>
+            <div style="height: 8px"></div>
+            <span class="card-preview-footer">signalstream</span>
+        </div>
+        <div class="card-preview-thumb">
+            <span class="card-preview-kicker">Themes</span>
+            <span class="card-preview-title">Key Themes</span>
+            <div style="flex:1"></div>
+            <div class="card-preview-bar" style="background: var(--blue); width: 80%"></div>
+            <div class="card-preview-bar" style="background: var(--blue); width: 55%; margin-top: 3px; opacity: 0.7"></div>
+            <div class="card-preview-bar" style="background: var(--blue); width: 35%; margin-top: 3px; opacity: 0.5"></div>
+            <div style="height: 8px"></div>
+            <span class="card-preview-footer">signalstream</span>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="feature-grid">
+        <div class="feature-card">
+            <span class="feature-icon">01</span>
+            <h3>Smart Discovery</h3>
+            <p>Automatically finds the most relevant communities and conversations for your topic across platforms.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">02</span>
+            <h3>AI-Powered Analysis</h3>
+            <p>Dual-model sentiment and emotion analysis using Claude AI with local Ollama fallback for privacy.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">03</span>
+            <h3>Ready-to-Share Cards</h3>
+            <p>Beautiful 4:5 report cards with data visualizations, messaging strategies, and actionable next steps.</p>
+        </div>
+    </div>
+</section>
+
+<section class="credibility">
+    <p>Built by <a href="{{ url_for('about') }}">Eston McKeague</a> &middot; Communications strategist &amp; political analyst</p>
+</section>
+{% endblock %}

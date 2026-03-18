@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+
+# Local config / secrets
+.env
+.env.*
+config.local.yaml
+config.yaml
+.hash_salt
+.email_key
+
+# Sensitive data files
+data/emails.json
+data/job_history.json
+
+# Generated pipeline outputs
+logs/*.log
+reports/*.pdf
+data/raw/*.json
+data/analyzed/*.json
+assets/images/cache/*
+assets/images/cache_manifest.json
+
+# Dev tooling (not part of the deliverable)
+orchestrator.py
+review_outputs/
+
+# macOS
+.DS_Store

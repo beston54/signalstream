@@ -1,0 +1,202 @@
+[
+  {
+    "post_id": "sample001",
+    "phrase_match": "climate policy",
+    "title": "New climate policy proposed in California",
+    "text": "The state legislature is considering a comprehensive climate bill that would mandate 50% renewable energy by 2030. What are your thoughts on this ambitious target? Is it achievable or just political posturing?",
+    "subreddit": "California",
+    "author": "testuser1",
+    "upvotes": 150,
+    "comments": 45,
+    "url": "https://reddit.com/r/California/comments/sample001",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "detected_language": "en",
+    "detected_region": "United States",
+    "top_comments": [
+      {
+        "comment_id": "c001",
+        "body": "This is long overdue. We need aggressive action on climate. The science is clear and we're running out of time.",
+        "author": "commenter1",
+        "upvotes": 75,
+        "timestamp": "2024-01-15T11:00:00Z",
+        "depth": 1,
+        "replies": [
+          {
+            "comment_id": "r001",
+            "body": "Agreed, but we also need to consider the economic impacts on working families.",
+            "author": "replier1",
+            "upvotes": 32,
+            "timestamp": "2024-01-15T11:15:00Z",
+            "depth": 2,
+            "replies": []
+          }
+        ]
+      },
+      {
+        "comment_id": "c002",
+        "body": "How will this affect energy costs for average families? I'm all for clean energy but not if it means my electricity bill doubles.",
+        "author": "commenter2",
+        "upvotes": 42,
+        "timestamp": "2024-01-15T11:30:00Z",
+        "depth": 1,
+        "replies": []
+      }
+    ]
+  },
+  {
+    "post_id": "sample002",
+    "phrase_match": "renewable energy",
+    "title": "Solar panel costs dropped 90% in the last decade",
+    "text": "Amazing progress in renewable energy technology. The economics are finally making sense for widespread adoption. My neighbor just installed a system and says it will pay for itself in 5 years.",
+    "subreddit": "technology",
+    "author": "testuser2",
+    "upvotes": 2500,
+    "comments": 312,
+    "url": "https://reddit.com/r/technology/comments/sample002",
+    "timestamp": "2024-01-14T15:45:00Z",
+    "detected_language": "en",
+    "detected_region": "global",
+    "top_comments": [
+      {
+        "comment_id": "c003",
+        "body": "Installed solar last year, already seeing significant savings. The technology has really matured.",
+        "author": "commenter3",
+        "upvotes": 180,
+        "timestamp": "2024-01-14T16:00:00Z",
+        "depth": 1,
+        "replies": []
+      },
+      {
+        "comment_id": "c004",
+        "body": "Don't forget battery storage is still expensive. Solar alone doesn't solve the intermittency problem.",
+        "author": "commenter4",
+        "upvotes": 95,
+        "timestamp": "2024-01-14T16:30:00Z",
+        "depth": 1,
+        "replies": []
+      }
+    ]
+  },
+  {
+    "post_id": "sample003",
+    "phrase_match": "world federalism",
+    "title": "Is global governance becoming more necessary in an interconnected world?",
+    "text": "With climate change, pandemics, and economic crises all being global problems, I've been reading about world federalism as a potential solution. The idea of strengthening international institutions seems appealing but also raises concerns about sovereignty.",
+    "subreddit": "PoliticalDiscussion",
+    "author": "testuser3",
+    "upvotes": 89,
+    "comments": 156,
+    "url": "https://reddit.com/r/PoliticalDiscussion/comments/sample003",
+    "timestamp": "2024-01-13T09:15:00Z",
+    "detected_language": "en",
+    "detected_region": "global",
+    "top_comments": [
+      {
+        "comment_id": "c005",
+        "body": "The EU shows both the promise and pitfalls of supranational governance. It's a complex balance.",
+        "author": "commenter5",
+        "upvotes": 67,
+        "timestamp": "2024-01-13T10:00:00Z",
+        "depth": 1,
+        "replies": [
+          {
+            "comment_id": "r002",
+            "body": "Brexit shows how difficult it is to maintain unity when national interests diverge.",
+            "author": "replier2",
+            "upvotes": 45,
+            "timestamp": "2024-01-13T10:30:00Z",
+            "depth": 2,
+            "replies": []
+          }
+        ]
+      },
+      {
+        "comment_id": "c006",
+        "body": "I'm skeptical. International institutions tend to be slow and bureaucratic. Look at the UN's response to crises.",
+        "author": "commenter6",
+        "upvotes": 54,
+        "timestamp": "2024-01-13T10:45:00Z",
+        "depth": 1,
+        "replies": []
+      }
+    ]
+  },
+  {
+    "post_id": "sample004",
+    "phrase_match": "energy transition",
+    "title": "Germany's Energiewende: Lessons learned after a decade",
+    "text": "Germany has been pursuing its energy transition (Energiewende) for years now. While renewable energy has grown significantly, there have been challenges with grid stability and energy prices. What can other countries learn from Germany's experience?",
+    "subreddit": "europe",
+    "author": "testuser4",
+    "upvotes": 234,
+    "comments": 189,
+    "url": "https://reddit.com/r/europe/comments/sample004",
+    "timestamp": "2024-01-12T14:20:00Z",
+    "detected_language": "en",
+    "detected_region": "Europe",
+    "top_comments": [
+      {
+        "comment_id": "c007",
+        "body": "The phase-out of nuclear while still relying on coal was a mistake. You need baseload power during the transition.",
+        "author": "commenter7",
+        "upvotes": 156,
+        "timestamp": "2024-01-12T15:00:00Z",
+        "depth": 1,
+        "replies": []
+      },
+      {
+        "comment_id": "c008",
+        "body": "German electricity prices are among the highest in Europe. The energy transition hasn't been cheap.",
+        "author": "commenter8",
+        "upvotes": 98,
+        "timestamp": "2024-01-12T15:30:00Z",
+        "depth": 1,
+        "replies": []
+      }
+    ]
+  },
+  {
+    "post_id": "sample005",
+    "phrase_match": "climate policy",
+    "title": "Youth climate activists are losing hope - what can we do differently?",
+    "text": "I've been involved in climate activism for years and I'm seeing a lot of burnout and despair among young activists. The gap between what science says we need and what politicians are doing is frustrating. How do we maintain momentum without losing hope?",
+    "subreddit": "environment",
+    "author": "testuser5",
+    "upvotes": 567,
+    "comments": 234,
+    "url": "https://reddit.com/r/environment/comments/sample005",
+    "timestamp": "2024-01-11T18:00:00Z",
+    "detected_language": "en",
+    "detected_region": "global",
+    "top_comments": [
+      {
+        "comment_id": "c009",
+        "body": "Focus on local wins. Getting your city council to pass renewable energy requirements feels more achievable than changing federal policy.",
+        "author": "commenter9",
+        "upvotes": 234,
+        "timestamp": "2024-01-11T19:00:00Z",
+        "depth": 1,
+        "replies": [
+          {
+            "comment_id": "r003",
+            "body": "This! Local action adds up and creates momentum for larger changes.",
+            "author": "replier3",
+            "upvotes": 89,
+            "timestamp": "2024-01-11T19:30:00Z",
+            "depth": 2,
+            "replies": []
+          }
+        ]
+      },
+      {
+        "comment_id": "c010",
+        "body": "Take breaks when you need them. Burnout helps no one. The movement needs you for the long haul.",
+        "author": "commenter10",
+        "upvotes": 178,
+        "timestamp": "2024-01-11T19:15:00Z",
+        "depth": 1,
+        "replies": []
+      }
+    ]
+  }
+]

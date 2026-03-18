@@ -1,0 +1,50 @@
+# Reddit API
+praw>=7.7.1,<8.0
+
+# Language detection
+langdetect>=1.0.9,<2.0
+
+# HTTP requests (for Ollama API and public endpoints)
+requests>=2.31.0,<3.0
+
+# PDF generation
+weasyprint>=63.0,<64.0
+
+# HTML templating for PDF
+jinja2>=3.1.2,<4.0
+
+# Configuration
+pyyaml>=6.0.1,<7.0
+
+# Data handling
+pandas>=2.0.0,<3.0
+
+# Date/time utilities
+python-dateutil>=2.8.2,<3.0
+
+# Chart generation
+matplotlib>=3.8.0,<4.0
+
+# Image processing
+Pillow>=10.4.0,<12.0
+
+# Claude API (sentiment analysis provider)
+anthropic>=0.42.0,<1.0
+
+# Web GUI
+flask>=3.0.0,<4.0
+
+# CSRF protection for Flask forms
+flask-wtf>=1.2.0,<2.0
+
+# Rate limiting for Flask routes
+flask-limiter>=3.5.0,<4.0
+
+# Email encryption at rest (GDPR Art. 32)
+cryptography>=43.0.0,<45.0
+
+# Security auditing (run: pip-audit)
+pip-audit>=2.7.0,<3.0
+
+# VADER sentiment baseline (classifier validation)
+vaderSentiment>=3.3.2
