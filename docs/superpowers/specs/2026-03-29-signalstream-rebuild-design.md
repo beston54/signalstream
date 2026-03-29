@@ -15,11 +15,13 @@ signalstream/
 ├── app/                        # Flask web layer
 │   ├── __init__.py             # App factory
 │   ├── middleware/
-│   │   └── api_keys.py         # Extract keys from headers, redact from logs
+│   │   ├── api_keys.py         # Extract keys from headers, redact from logs
+│   │   └── security.py         # Security headers (CSP, X-Frame-Options, etc.) + CSRF
+│   ├── errors.py               # Error code catalog with user-facing messages
 │   ├── routes/
 │   │   ├── analysis.py         # Start jobs, job status
-│   │   ├── dashboard.py        # Results page, historical dashboard
-│   │   ├── api.py              # JSON API endpoints (status, trends, results, compare)
+│   │   ├── dashboard.py        # Results page
+│   │   ├── api.py              # JSON API endpoints (status, results)
 │   │   └── settings.py         # Provider detection + key validation endpoint
 │   ├── static/                 # CSS, JS
 │   └── templates/
@@ -30,30 +32,30 @@ signalstream/
 ├── collectors/                 # Data collection from social platforms
 │   ├── base.py                 # Abstract interface + normalized Post dataclass
 │   ├── reddit.py               # Public JSON (default) + optional PRAW
-│   ├── x.py                    # X/Twitter API v2 (optional, requires bearer token)
 │   └── http.py                 # Shared resilient HTTP client (retry, backoff, timeouts)
 │
 ├── analyzers/                  # LLM-powered analysis
 │   ├── base.py                 # Abstract interface with LLM dependency injection
-│   ├── sentiment.py            # Per-post sentiment/emotion analysis
-│   ├── thematic.py             # Cross-post theme extraction
-│   └── schemas.py              # Output dataclasses (SentimentResult, Theme)
+│   ├── prompts.py              # All LLM prompt templates (version-tagged)
+│   ├── sentiment.py            # Per-post sentiment/emotion analysis with checkpointing
+│   ├── thematic.py             # Cross-post theme extraction with chunking
+│   └── schemas.py              # Output dataclasses + validation functions
 │
 ├── llm/                        # LLM provider system
 │   ├── router.py               # Provider selection, pre-flight check, no auto-fallback
 │   ├── config.py               # ProviderConfig dataclass (per-request, not singleton)
 │   ├── safety.py               # SSRF validation for custom endpoints
 │   └── providers/
-│       ├── base.py             # Abstract: complete(messages, model) → str
+│       ├── base.py             # Abstract: complete(messages, model, config) → str
 │       ├── claude.py           # Anthropic API
 │       ├── openai_compat.py    # Any OpenAI-compatible endpoint
 │       └── ollama.py           # Local Ollama (auto-detected)
 │
 ├── reports/                    # Report generation
 │   ├── builder.py              # Assembles report content (what goes in)
-│   ├── renderer.py             # HTML → PDF via WeasyPrint (optional dep)
-│   ├── charts.py               # Matplotlib chart generation (base64 PNGs)
-│   ├── exports.py              # JSON, CSV export
+│   ├── renderer.py             # HTML → PDF via WeasyPrint (optional dep, safe url_fetcher)
+│   ├── charts.py               # Matplotlib (Agg backend, OO API, thread-locked)
+│   ├── exports.py              # JSON export
 │   └── pdf_templates/          # Jinja2 + CSS for PDF cards (separate from Flask templates)
 │       ├── report.html
 │       └── styles.css
@@ -69,9 +71,6 @@ signalstream/
 │   ├── models.py               # Domain dataclasses (not ORM)
 │   ├── repositories.py         # All SQL here (parameterized queries only)
 │   └── migrations.py           # Schema versioning, auto-migrate on startup
-│
-├── cli/                        # CLI entry point
-│   └── main.py                 # Argument parsing, env var keys, output formatting
 │
 ├── dev/                        # Internal dev tools (not user-facing)
 │   └── orchestrator.py         # Multi-agent review framework
@@ -94,6 +93,8 @@ signalstream/
 - `llm_client.py` (397 lines) → `llm/` package with provider system + router + SSRF safety
 - Pipeline orchestration extracted from `app.py` into `jobs/` package
 - `orchestrator.py` moved to `dev/` (contributor tool, not user-facing)
+- X/Twitter collector deferred to v0.3.0
+- CLI interface deferred to v0.2.0
 
 ---
 
@@ -118,6 +119,26 @@ Providers are **stateless**. Each job creates a provider instance with credentia
 - Local instance, no API key needed
 - Auto-detected: settings page pings `localhost:11434/api/tags` on load
 - Model dropdown populated from available models
+
+### CompletionConfig
+
+Per-call configuration for LLM requests:
+
+```python
+@dataclass
+class CompletionConfig:
+    temperature: float = 0.0    # deterministic for classification tasks
+    max_tokens: int = 1024
+```
+
+The provider base interface uses this:
+
+```python
+# base.py abstract method
+complete(messages: list[dict], model: str, config: CompletionConfig = CompletionConfig()) -> str
+```
+
+`temperature=0.0` is the default because sentiment classification requires deterministic output. This is ported from the current codebase (`llm_client.py:81`).
 
 ### ProviderConfig
 
@@ -155,6 +176,8 @@ For user-configurable OpenAI-compatible endpoints:
 - DNS resolution pinning (resolve once, use the resolved IP for the actual request)
 - Enforce timeouts (30s connect, 120s read) and response size limits (10MB)
 
+**Localhost exemption:** Endpoints resolving to `127.0.0.0/8` or `::1` are exempt from the HTTPS requirement and private network block. This is required to support local inference servers (LM Studio, vLLM, llama.cpp, text-generation-webui). All other SSRF protections (timeouts, response size limits, no redirects) still apply to localhost endpoints.
+
 ---
 
 ## 3. Browser-to-Server Key Flow
@@ -190,12 +213,14 @@ X-LLM-Model: claude-sonnet-4-20250514
 X-LLM-Endpoint: https://api.openai.com/v1  (only for openai-compat)
 ```
 
-### CLI uses standard env vars
+### CLI uses standard env vars (v0.2.0)
+
+CLI is deferred to v0.2.0. When implemented:
 
 - `ANTHROPIC_API_KEY` for Claude
 - `OPENAI_API_KEY` + `OPENAI_BASE_URL` for OpenAI-compatible
 - `OLLAMA_HOST` for non-default Ollama address
-- CLI also accepts `--api-key` as an override
+- CLI reads credentials exclusively from environment variables. No command-line flags accept secrets. This prevents exposure in process lists (`ps aux`) and shell history.
 
 CLI never touches localStorage or HTTP headers.
 
@@ -217,11 +242,23 @@ PENDING → COLLECTING → ANALYZING → THEMING → REPORTING → COMPLETED
                                                         → FAILED (from any stage)
 ```
 
+### Job cancellation
+
+`cancel_job(job_id)` sets a `CancellationToken` (`threading.Event`). Each pipeline stage checks the token before processing the next item. The sentiment analyzer checks between posts. The collector checks between pagination requests. Cancellation is cooperative — stages complete their current item, then exit cleanly. Partial results up to the cancellation point are preserved.
+
+### Graceful shutdown
+
+SIGTERM/SIGINT triggers orderly shutdown: (1) stop accepting new jobs, (2) set cancellation tokens on all running jobs, (3) wait up to 30 seconds for running jobs to reach a checkpoint, (4) persist partial results, (5) close database connections, (6) exit.
+
 ### Pre-flight sequence (before pipeline starts)
 
 1. Validate `ProviderConfig` — SSRF check on custom endpoints
 2. Test LLM connection — minimal API call
 3. Only then submit job to thread pool
+
+### Progress reporting
+
+The dashboard polls `GET /api/jobs/<id>/status` every 2 seconds while a job is running. Response includes: `{ stage, items_completed, items_total, message, elapsed_seconds }`. No WebSocket or SSE in v0.1.0 — XHR polling is simpler and sufficient for 1-2 concurrent jobs. The polling interval doubles to 4 seconds after 60 seconds, and to 8 seconds after 5 minutes, to reduce load on long-running jobs.
 
 ### Key boundary
 
@@ -231,11 +268,21 @@ PENDING → COLLECTING → ANALYZING → THEMING → REPORTING → COMPLETED
 
 ## 5. Data Collection Layer
 
-### Normalized Post dataclass
+### Normalized data model
 
 All collectors return `list[Post]`:
 
 ```python
+@dataclass
+class Comment:
+    id: str
+    body: str
+    author: str            # anonymized at report time
+    score: int
+    timestamp: datetime
+    depth: int
+    replies: list['Comment']
+
 @dataclass
 class Post:
     platform: str          # "reddit" | "x"
@@ -247,8 +294,19 @@ class Post:
     url: str
     community: str         # subreddit name or X search context
     engagement: int        # upvotes / likes
-    comments: list[str]    # top N comment texts
+    comments: list[Comment]       # structured comments with threading
+    phrase_matches: list[str]     # which search queries matched this post
+    detected_language: str        # ISO 639-1 code
+    detected_region: str          # inferred region
+    poster_region: str
+    topic_region: str
+    upvote_ratio: float | None    # Reddit-specific
+    flair: str | None             # Reddit flair
+    is_crosspost: bool
+    crosspost_source: str | None
 ```
+
+The `Comment` dataclass preserves reply nesting, authorship, and scores — required for thread-mode analysis. This matches the existing codebase's structured comment storage.
 
 ### Reddit collector
 
@@ -256,10 +314,9 @@ class Post:
 - **Upgrade path:** if `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET` env vars are set, uses PRAW automatically.
 - README disclaimer about public JSON and Reddit ToS.
 
-### X collector
+### X collector (v0.3.0)
 
-- Requires bearer token via `X-Twitter-Bearer` header (browser) or `X_API_BEARER_TOKEN` env var (CLI)
-- Optional — skipped with a note if no token configured
+Deferred to v0.3.0. Requires bearer token and separate API contract. Low priority for the primary persona.
 
 ### Shared HTTP client (`http.py`)
 
@@ -271,6 +328,15 @@ class Post:
 - Strip HTML tags from scraped content using `nh3` before storing in SQLite
 - First line of XSS defense — malicious content never reaches the database in raw form
 
+**Sanitization implementation:** `collectors/base.py` provides a `sanitize_post(post: Post) -> Post` function that applies `nh3.clean()` to `post.text`, `post.title`, and all `comment.body` fields recursively. Every collector calls `sanitize_post` before returning results. This is not optional — it is enforced by the base class.
+
+### Reddit ToS compliance
+
+- User-Agent header identifies the tool (`Signalstream/0.1.0`)
+- Rate-limited to 1 request/second
+- Respect `robots.txt` for domains being hit
+- Clear user-facing notice that users are responsible for compliance with Reddit's Terms of Service
+
 ---
 
 ## 6. Analysis Layer
@@ -278,6 +344,12 @@ class Post:
 ### Design principle
 
 Analyzers receive a provider instance via dependency injection. They never import the LLM router directly. This makes them testable with a mock provider.
+
+### Prompt templates (`prompts.py`)
+
+All LLM prompt templates live in `analyzers/prompts.py`. Prompts are version-tagged (e.g., `SENTIMENT_PROMPT_V1 = ...`) for reproducibility. Port prompt templates from current `analyzer.py:201-324`.
+
+Contents: sentiment analysis system prompt, user content formatting (wrapped in `<user_post>...</user_post>` delimiters to mitigate prompt injection), expected output JSON schema, and retry prompt with tighter format instructions.
 
 ### Sentiment analyzer
 
@@ -297,6 +369,8 @@ class SentimentResult:
 - Partial failure handling: if 5/37 posts fail (rate limits, malformed LLM output), returns the 32 that succeeded with a count of skipped posts
 - Progress callback after each post for UI updates
 
+**Checkpointing:** After each successful post analysis, the result is written to the database immediately. If the job fails at post N, posts 1 through N-1 are preserved. Job retry resumes from post N. The progress callback reports `(completed, total, current_post_id)`.
+
 ### Thematic analyzer
 
 - Input: `list[AnalyzedPost]` (output of sentiment analysis)
@@ -314,21 +388,51 @@ class Theme:
     representative_quotes: list[str]
 ```
 
+**Context window management:** For collections exceeding 50 posts, the thematic analyzer chunks posts into groups of 50, generates themes per chunk, then runs a consolidation pass that merges duplicate themes and recalculates percentages. Token count is estimated before each LLM call (4 chars ~= 1 token). If a single chunk exceeds 80% of the model's context window, the chunk size is halved.
+
 ### LLM output handling
 
 - Parsing lives in each analyzer, not the provider. Provider returns raw text; analyzer parses into typed schema.
 - Malformed LLM output → retry once with tighter prompt → skip that post on second failure
 
+**Output validation:** `analyzers/schemas.py` includes validation functions for each output type. `validate_sentiment_result(raw: dict) -> SentimentResult` checks: `sentiment` is in `{positive, negative, neutral, mixed}`, `confidence` is a float in [0.0, 1.0], `emotion` is from a defined set of 8 basic emotions, `key_point` is a non-empty string under 200 characters, `sarcasm_detected` is boolean. Invalid responses trigger one retry with a tighter prompt. Second failure skips the post with a warning.
+
 ---
 
-## 7. Reports & Dashboard
+## 7. Error Handling & Observability
+
+### Error taxonomy
+
+All user-facing errors use structured error codes. Each code maps to a user-facing message and a suggested action. Messages defined in `app/errors.py`.
+
+| Code | Meaning | User Message | Action |
+|------|---------|-------------|--------|
+| `PROVIDER_UNREACHABLE` | LLM provider not responding | "Could not reach [provider]. Check your internet connection." | Retry / Switch Provider |
+| `PROVIDER_AUTH_FAILED` | Invalid API key | "Your [provider] API key appears to be invalid or expired." | Open Settings |
+| `PROVIDER_RATE_LIMITED` | Rate limited by provider | "Rate limited by [provider]. Retrying in [N] seconds..." | Auto-retry with backoff |
+| `PROVIDER_CONTEXT_EXCEEDED` | Input too large for model | "Post too long for [model]. Skipping." | Auto-skip |
+| `COLLECTOR_RATE_LIMITED` | Reddit rate limit hit | "Reddit is rate-limiting requests. Waiting..." | Auto-retry |
+| `COLLECTOR_EMPTY` | No posts found | "No posts found for '[topic]'. Try broader search terms." | Edit topic / Retry |
+| `COLLECTOR_BLOCKED` | Reddit blocking requests | "Reddit is not responding. Try again in a few minutes." | Retry later |
+| `ANALYSIS_PARSE_FAILED` | LLM returned unparseable output | "Could not parse analysis for [N] posts." | Shown in results |
+| `ANALYSIS_PARTIAL` | Some posts failed | "Analysis complete ([N] of [M] posts analyzed)." | Shown in results |
+| `REPORT_PDF_UNAVAILABLE` | WeasyPrint not installed | "PDF export requires additional setup." | Show install instructions |
+| `DB_LOCKED` | Database write contention | (invisible — auto-retry internally) | Auto-retry |
+
+### LLM call logging
+
+Every LLM call logs (debug-level structured log, not user-facing): prompt hash, response hash, model, temperature, token count (estimated), latency, success/failure. This enables debugging "why did this job produce weird results" without storing full prompt/response content in production.
+
+---
+
+## 8. Reports & Dashboard
 
 ### Reports package
 
 - **`builder.py`** — assembles report content: which sections, which data, which charts. Produces a `ReportContent` dataclass.
 - **`renderer.py`** — takes `ReportContent`, produces PDF via WeasyPrint. Owns the custom `url_fetcher` that blocks all external resource loading (SSRF mitigation). Only file that imports WeasyPrint.
-- **`charts.py`** — Matplotlib chart generation as base64 PNGs. Used by the PDF renderer only. Emotion distribution, sentiment split, theme frequency, community breakdown. The web dashboard renders its own charts client-side via Chart.js from JSON API data.
-- **`exports.py`** — JSON and CSV export of analysis results.
+- **`charts.py`** — Matplotlib chart generation as base64 PNGs. Used by the PDF renderer only. Emotion distribution, sentiment split, theme frequency, community breakdown. The web dashboard renders its own charts client-side via Chart.js from JSON API data. **Thread safety:** Must use `matplotlib.use('Agg')` at import time, object-oriented API only (no `plt.*` calls), and `threading.Lock` around all figure creation/rendering.
+- **`exports.py`** — JSON export of analysis results.
 - **`pdf_templates/`** — Jinja2 + CSS for PDF report cards. Separate Jinja2 environment from Flask templates.
 
 ### WeasyPrint is optional
@@ -348,10 +452,17 @@ except (ImportError, OSError):
 
 ### WeasyPrint SSRF mitigation
 
-Custom `url_fetcher` in `renderer.py`:
-- Only allows `data:` URIs and pre-approved local static files
-- Blocks all external URLs and `file://` URIs
-- Prevents CSS/HTML resource loading attacks during PDF rendering
+Custom `url_fetcher` in `renderer.py` — blocks ALL external resource loading:
+
+```python
+def _safe_url_fetcher(url: str, timeout=10, ssl_context=None):
+    """Block all external resource loading in PDF generation."""
+    if url.startswith('data:'):
+        return weasyprint.default_url_fetcher(url)
+    raise ValueError(f"Blocked external resource in PDF template: {url}")
+```
+
+Pass `url_fetcher=_safe_url_fetcher` to `HTML()` constructor. No exceptions. No allowlist for local files — all assets must be inlined as data URIs or embedded in the HTML string before rendering. This prevents `file:///etc/passwd` reads and SSRF via CSS/HTML resource loading.
 
 ### Dashboard
 
@@ -361,21 +472,25 @@ Custom `url_fetcher` in `renderer.py`:
 - Top themes with representative quotes
 - Community-level breakdown
 - Key metrics (post count, dominant emotion, sentiment ratio)
-- "Download PDF" button + "Export JSON/CSV"
+- Cost estimate ("This analysis used ~15,000 tokens, ~$0.05")
+- "Download PDF" button + "Export JSON"
+- "Powered by Signalstream" footer in PDF reports (removable via branding config)
 - Data loaded from `/api/results/<job_id>` JSON endpoint
 
-**Historical dashboard** (separate page):
-- Past analyses with key metrics
-- Trend charts: sentiment for a topic over multiple runs
-- Side-by-side comparison of two analyses
-- Filterable by topic, date range
-- Data from `/api/trends` and `/api/compare` endpoints
+**Historical dashboard** (v0.2.0):
+Deferred. Data is still stored — the view comes later. Includes: past analyses with key metrics, trend charts, side-by-side comparison, filterable by topic/date.
 
-**Dashboard charts are client-side** — rendered from JSON API data using a lightweight charting library (Chart.js). Interactive: hover, filter, drill-down. No server-round-trips for chart rendering.
+**Dashboard states:** Every view must handle 4 states:
+1. **Empty** — no analyses yet, show onboarding prompt
+2. **Loading** — skeleton/spinner while API call is in flight
+3. **Error** — specific error message with retry action (using error taxonomy from Section 7)
+4. **Populated** — the normal data view
+
+**Dashboard charts are client-side** — rendered from JSON API data using Chart.js. Interactive: hover, filter. No server-round-trips for chart rendering.
 
 ---
 
-## 8. Database Layer
+## 9. Database Layer
 
 ### Design decisions
 
@@ -396,7 +511,7 @@ Custom `url_fetcher` in `renderer.py`:
 
 - Configurable auto-delete, default 90 days. Runs on app startup.
 - "Delete all data" endpoint in the UI.
-- `VACUUM` after bulk deletes to reclaim space and ensure data is removed from the file.
+- **Space reclamation:** Use `PRAGMA auto_vacuum = INCREMENTAL` set at database creation. After bulk deletes, run `PRAGMA incremental_vacuum(N)` to reclaim N pages without blocking concurrent operations. Full `VACUUM` available only via explicit CLI command (`signalstream db vacuum`) when the server is stopped.
 - Database file, WAL, and journal in `.gitignore`.
 
 ### Post-job data minimization
@@ -405,17 +520,22 @@ After a job completes, full post text is replaced with truncated summaries. The 
 
 ---
 
-## 9. First-Run Experience & Configuration
+## 10. First-Run Experience & Configuration
 
 ### Zero-config startup
 
+**Prerequisites:** `pip install signalstream` (or `pip install signalstream[pdf]` for PDF reports).
+
 ```bash
+pip install signalstream
 python -m signalstream
 # → SQLite auto-created
 # → Schema migrations applied
-# → Browser opens to localhost:5000
+# → Browser opens to localhost:5001
 # → Welcome screen with search box
 ```
+
+Default port is `5001`. Port 5000 conflicts with macOS AirPlay Receiver (Monterey+). If the configured port is in use, the server tries the next 5 sequential ports and logs which port was actually bound.
 
 ### First-run flow
 
@@ -429,48 +549,22 @@ python -m signalstream
 
 Settings page exists separately for changing provider later, but first-run never routes there.
 
-### Config file is entirely optional
+### Dead end prevention
 
-`config.yaml` overrides defaults. Everything commented out by default. The file is documentation, not a prerequisite.
+If no provider is available (no Ollama running, no API keys entered), the provider selector shows:
+1. A one-line command to install and start Ollama
+2. A link to get a Claude API key
+3. A **"Try with demo data"** button that loads a cached example analysis (ships with the package)
 
-```yaml
-# search:
-#   max_posts: 50              # default: 25
-#   time_filter: month         # default: week
-#   subreddits: [technology]   # default: auto from topic
+The user must never see a screen with no forward path.
 
-# branding:
-#   company_name: "My Company"
-#   accent_color: "#2563eb"
+### Config file (v0.2.0)
 
-# server:
-#   host: 127.0.0.1            # default, never 0.0.0.0
-#   port: 5000
-
-# data:
-#   retention_days: 90         # default: 90
-```
-
-### CLI mirrors zero-config
-
-```bash
-# Ollama auto-detected
-python -m signalstream analyze "remote work"
-
-# Cloud provider via env var
-ANTHROPIC_API_KEY=sk-ant-... python -m signalstream analyze "remote work"
-
-# Full control
-python -m signalstream analyze "remote work" \
-  --subreddits technology,cscareer \
-  --max-posts 100 \
-  --format pdf,html,json \
-  --open
-```
+`config.yaml` support is deferred to v0.2.0. In v0.1.0, all configuration happens through the web UI settings page and environment variables. This keeps the zero-config story clean.
 
 ---
 
-## 10. Repo Hygiene & Open-Source Readiness
+## 11. Repo Hygiene & Open-Source Readiness
 
 ### Root-level files
 
@@ -517,22 +611,33 @@ signalstream = "signalstream.cli.main:main"
 ```
 .github/
 ├── workflows/
-│   └── ci.yml              # ruff + pytest on Python 3.10–3.12
+│   └── ci.yml              # ruff + pytest on Python 3.10, 3.12, 3.14
 ├── ISSUE_TEMPLATE/
 │   ├── bug_report.yml
 │   └── feature_request.yml
 └── PULL_REQUEST_TEMPLATE.md
 ```
 
-### Security hardening (baked into code)
+### Security hardening (must be implemented, not assumed)
 
-- CSP headers on all responses (`script-src 'self'`, no inline scripts)
+**`app/middleware/security.py`** — Flask `after_request` handler that sets security headers on every response:
+- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'`
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Referrer-Policy: no-referrer`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- CSRF double-submit cookie on all POST/PUT/DELETE endpoints
 - CORS same-origin only
-- `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`
-- Header-sanitizing middleware redacts API keys from all logs
+
+**`app/middleware/api_keys.py`** — Header-sanitizing middleware:
+- Extracts `X-LLM-API-Key` into `ProviderConfig`
+- Strips key from `request.environ` before any logging can occur
+- Custom `logging.Filter` that pattern-matches and redacts `sk-ant-*`, `sk-*` strings from all log messages
+
+**Other hardening:**
 - `debug=False` unless `SIGNALSTREAM_DEBUG=1` explicitly set
 - Bind `127.0.0.1` by default, startup warning if overridden
-- SSRF validation on custom LLM endpoints
+- SSRF validation on custom LLM endpoints (with localhost exemption)
 - WeasyPrint custom `url_fetcher` blocks external resources
 - Input validation on all job parameters (subreddit names, queries, dates)
 - Parameterized SQL exclusively
@@ -542,17 +647,36 @@ signalstream = "signalstream.cli.main:main"
 
 ```bash
 docker compose up
-# → App at localhost:5000 with all deps (including WeasyPrint)
+# → App at localhost:5001 with all deps (including WeasyPrint)
 # → Optional Ollama sidecar for zero-key local analysis
 ```
 
-Sidesteps WeasyPrint system deps and Python version issues entirely.
+Sidesteps WeasyPrint system deps and Python version issues entirely. Dockerfile uses a non-root user — final stage runs as `USER signalstream` with a dedicated UID. No capabilities added beyond defaults.
 
 ---
 
-## Out of Scope
+## Phased Roadmap
 
-These are explicitly not part of this rebuild:
+### v0.1.0 — "The Magic Moment"
+Everything in this spec. Reddit + Ollama/Claude/OpenAI-compat + Web UI + PDF reports + Docker.
+
+### v0.2.0 — "Power Users"
+- CLI interface
+- Historical dashboard with trends
+- Side-by-side comparison view
+- CSV export
+- `config.yaml` support
+- Reddit PRAW upgrade path docs
+
+### v0.3.0 — "Growth & Ecosystem"
+- X/Twitter collector
+- Scheduled recurring analyses
+- Shareable static HTML reports
+- Email digest of results
+
+---
+
+## Out of Scope (all versions)
 
 - User accounts or authentication (local-first tool)
 - Email gating for downloads
