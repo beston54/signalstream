@@ -1,0 +1,213 @@
+{# signalstream/reports/pdf_templates/report.html #}
+{#
+    PDF Report Template — Signalstream
+
+    Rendered by WeasyPrint via renderer.py.
+    All chart images are inline base64 data URIs (BOARD-002).
+
+    Context variables:
+      - content: ReportContent dataclass
+      - css: inline CSS string (from styles.css)
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>{{ css }}</style>
+</head>
+<body>
+
+{# -- Report Header ------------------------------------------------ #}
+<div class="report-header">
+    <h1>Sentiment Analysis Report</h1>
+    <p class="subtitle">{{ content.topic }}</p>
+    <p class="meta">
+        Generated {{ content.generated_at[:10] }}
+        &middot; {{ content.total_posts }} posts analyzed
+        {% if content.skipped_count > 0 %}
+        &middot; {{ content.skipped_count }} skipped
+        {% endif %}
+        &middot; Search: {{ content.phrases | join(", ") }}
+    </p>
+</div>
+
+{# -- Card 1: Executive Snapshot ----------------------------------- #}
+<div class="card">
+    <h2>Executive Snapshot</h2>
+    <div class="snapshot-grid">
+        <div class="snapshot-metric">
+            <div class="value">{{ content.executive_snapshot.total_posts }}</div>
+            <div class="label">Posts Analyzed</div>
+        </div>
+        <div class="snapshot-metric">
+            <div class="value">{{ content.executive_snapshot.dominant_sentiment | capitalize }}</div>
+            <div class="label">Dominant Sentiment</div>
+        </div>
+        <div class="snapshot-metric">
+            <div class="value">{{ content.executive_snapshot.dominant_emotion | capitalize }}</div>
+            <div class="label">Dominant Emotion</div>
+        </div>
+        <div class="snapshot-metric">
+            <div class="value">{{ "%.0f" | format(content.executive_snapshot.avg_confidence * 100) }}%</div>
+            <div class="label">Avg Confidence</div>
+        </div>
+        <div class="snapshot-metric">
+            <div class="value">{{ content.executive_snapshot.sentiment_ratio }}</div>
+            <div class="label">Positive : Negative</div>
+        </div>
+        <div class="snapshot-metric">
+            <div class="value">{{ content.executive_snapshot.top_theme }}</div>
+            <div class="label">Top Theme</div>
+        </div>
+    </div>
+</div>
+
+{# -- Card 2: Emotional Landscape --------------------------------- #}
+{% if content.charts.get("emotion") %}
+<div class="card">
+    <h2>Emotional Landscape</h2>
+    <p>Distribution of detected emotions across all analyzed posts.</p>
+    <div class="chart-container">
+        <img src="{{ content.charts.emotion }}" alt="Emotion distribution chart">
+    </div>
+</div>
+{% endif %}
+
+{# -- Card 3: Sentiment Split -------------------------------------- #}
+{% if content.charts.get("sentiment") %}
+<div class="card">
+    <h2>Sentiment Split</h2>
+    <p>Overall sentiment breakdown across the dataset.</p>
+    <div class="chart-container">
+        <img src="{{ content.charts.sentiment }}" alt="Sentiment split chart">
+    </div>
+</div>
+{% endif %}
+
+{# -- Card 4: Key Themes ------------------------------------------- #}
+{% if content.themes %}
+<div class="card">
+    <h2>Key Themes</h2>
+    {% if content.charts.get("themes") %}
+    <div class="chart-container">
+        <img src="{{ content.charts.themes }}" alt="Theme frequency chart">
+    </div>
+    {% endif %}
+
+    {% for theme in content.themes %}
+    <div class="theme-item">
+        <div class="theme-name">{{ theme.name }}</div>
+        <div class="theme-stats">
+            {{ "%.0f" | format(theme.percentage) }}% of posts
+            ({{ theme.post_count }} posts)
+            &middot; Sentiment skew: {{ theme.sentiment_skew }}
+        </div>
+        <div class="theme-desc">{{ theme.description }}</div>
+        {% for quote in theme.get("representative_quotes", [])[:2] %}
+        <blockquote>&ldquo;{{ quote }}&rdquo;</blockquote>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# -- Card 5: Community Lens --------------------------------------- #}
+{% if content.statistics.community_breakdown %}
+<div class="card">
+    <h2>Community Lens</h2>
+    <p>Sentiment distribution across online communities.</p>
+
+    {% if content.charts.get("community") %}
+    <div class="chart-container">
+        <img src="{{ content.charts.community }}" alt="Community breakdown chart">
+    </div>
+    {% endif %}
+
+    <table class="community-table">
+        <thead>
+            <tr>
+                <th>Community</th>
+                <th>Positive</th>
+                <th>Negative</th>
+                <th>Neutral</th>
+                <th>Mixed</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for comm_name, comm_data in content.statistics.community_breakdown.items() %}
+            <tr>
+                <td>{{ comm_name }}</td>
+                <td>{{ comm_data.get("positive", 0) }}</td>
+                <td>{{ comm_data.get("negative", 0) }}</td>
+                <td>{{ comm_data.get("neutral", 0) }}</td>
+                <td>{{ comm_data.get("mixed", 0) }}</td>
+                <td>{{ comm_data.values() | sum }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{# -- Card 6: Messaging Playbook ---------------------------------- #}
+{% if content.themes %}
+<div class="card">
+    <h2>Messaging Playbook</h2>
+    <p>Actionable takeaways based on the dominant themes and sentiment patterns.</p>
+
+    {% for theme in content.themes[:5] %}
+    <div class="playbook-item">
+        <div class="playbook-label">
+            {% if theme.sentiment_skew == "positive" %}
+                Amplify: {{ theme.name }}
+            {% elif theme.sentiment_skew == "negative" %}
+                Address: {{ theme.name }}
+            {% else %}
+                Monitor: {{ theme.name }}
+            {% endif %}
+        </div>
+        <div class="playbook-text">
+            {{ theme.description }}
+            ({{ "%.0f" | format(theme.percentage) }}% of conversation,
+            {{ theme.sentiment_skew }} sentiment)
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# -- Card 7: Methodology & Data Scope ----------------------------- #}
+<div class="card">
+    <h2>Methodology &amp; Data Scope</h2>
+    <dl class="methodology">
+        <dt>Data Source</dt>
+        <dd>Reddit public posts and comments</dd>
+
+        <dt>Search Phrases</dt>
+        <dd>{{ content.phrases | join(", ") }}</dd>
+
+        <dt>Posts Collected</dt>
+        <dd>{{ content.total_posts }}{% if content.skipped_count > 0 %} ({{ content.skipped_count }} could not be analyzed){% endif %}</dd>
+
+        <dt>Analysis Method</dt>
+        <dd>Per-post LLM-based sentiment classification, emotion detection, sarcasm detection, and key-point extraction. Cross-post thematic analysis with consolidation.</dd>
+
+        <dt>Confidence</dt>
+        <dd>Average model confidence: {{ "%.0f" | format(content.executive_snapshot.avg_confidence * 100) }}%</dd>
+
+        <dt>Limitations</dt>
+        <dd>Results reflect publicly visible content only. Sentiment classification accuracy depends on the LLM model used. Sarcasm and nuance may be misclassified. This report is for informational purposes and should not be the sole basis for decisions.</dd>
+    </dl>
+</div>
+
+{# -- Footer ------------------------------------------------------- #}
+{% if content.branding_footer %}
+<div class="report-footer">
+    <span class="branding">Powered by Signalstream</span>
+    &middot; Open-source sentiment analysis
+</div>
+{% endif %}
+
+</body>
+</html>
