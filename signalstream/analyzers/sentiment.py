@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Callable
 
 from signalstream.analyzers.base import BaseAnalyzer, ProgressCallback
 from signalstream.analyzers.prompts import (
@@ -20,8 +19,6 @@ from signalstream.analyzers.prompts import (
 )
 from signalstream.analyzers.schemas import ValidationError, validate_sentiment_result
 from signalstream.db.models import Post, SentimentResult
-from signalstream.llm.config import CompletionConfig
-from signalstream.llm.providers.base import BaseProvider
 
 logger = logging.getLogger(__name__)
 

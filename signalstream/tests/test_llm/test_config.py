@@ -8,7 +8,10 @@ from signalstream.llm.config import CompletionConfig, ProviderConfig
 
 class TestProviderConfig:
     def test_claude_config(self) -> None:
-        cfg = ProviderConfig(provider="claude", api_key="sk-ant-test", model="claude-haiku-4-5-20251001")
+        cfg = ProviderConfig(
+            provider="claude", api_key="sk-ant-test",
+            model="claude-haiku-4-5-20251001",
+        )
         assert cfg.provider == "claude"
         assert cfg.endpoint is None
 

@@ -3,17 +3,12 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-import pytest
-
 from signalstream.analyzers.prompts import (
-    SENTIMENT_PROMPT_V1,
-    THEMATIC_PROMPT_V1,
-    SENTIMENT_RETRY_PROMPT_V1,
     build_sentiment_prompt,
-    build_thematic_prompt,
     build_sentiment_retry_prompt,
+    build_thematic_prompt,
 )
-from signalstream.db.models import Comment, Post, SentimentResult
+from signalstream.db.models import Comment, Post
 
 
 def _make_post(**overrides) -> Post:

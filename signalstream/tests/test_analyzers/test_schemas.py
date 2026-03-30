@@ -7,8 +7,6 @@ from signalstream.analyzers.schemas import (
     ValidationError,
     validate_sentiment_result,
     validate_theme,
-    VALID_SENTIMENTS,
-    VALID_EMOTIONS,
 )
 from signalstream.db.models import SentimentResult, Theme
 

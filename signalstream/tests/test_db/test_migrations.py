@@ -1,10 +1,7 @@
 """Tests for signalstream.db.migrations."""
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
-
-import pytest
 
 from signalstream.db.engine import DatabaseEngine
 from signalstream.db.migrations import MigrationManager

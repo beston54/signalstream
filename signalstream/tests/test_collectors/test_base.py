@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from signalstream.collectors.base import sanitize_post, BaseCollector
+from signalstream.collectors.base import BaseCollector, sanitize_post
 from signalstream.db.models import Comment, Post
 
 

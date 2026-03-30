@@ -1,8 +1,7 @@
 """Tests for signalstream.llm.providers."""
 from __future__ import annotations
 
-import json
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -28,7 +27,10 @@ class TestClaudeProvider:
 
         with patch("signalstream.llm.providers.claude.anthropic") as mock_anthropic:
             mock_anthropic.Anthropic.return_value = mock_client
-            config = ProviderConfig(provider="claude", api_key="sk-ant-test", model="claude-haiku-4-5-20251001")
+            config = ProviderConfig(
+                provider="claude", api_key="sk-ant-test",
+                model="claude-haiku-4-5-20251001",
+            )
             provider = ClaudeProvider(config)
             result = provider.complete(
                 messages=[{"role": "user", "content": "test"}],
@@ -49,7 +51,10 @@ class TestClaudeProvider:
 
         with patch("signalstream.llm.providers.claude.anthropic") as mock_anthropic:
             mock_anthropic.Anthropic.return_value = mock_client
-            config = ProviderConfig(provider="claude", api_key="sk-ant-test", model="claude-haiku-4-5-20251001")
+            config = ProviderConfig(
+                provider="claude", api_key="sk-ant-test",
+                model="claude-haiku-4-5-20251001",
+            )
             provider = ClaudeProvider(config)
             provider.complete(
                 messages=[
@@ -72,7 +77,10 @@ class TestClaudeProvider:
 
         with patch("signalstream.llm.providers.claude.anthropic") as mock_anthropic:
             mock_anthropic.Anthropic.return_value = mock_client
-            config = ProviderConfig(provider="claude", api_key="sk-ant-test", model="claude-haiku-4-5-20251001")
+            config = ProviderConfig(
+                provider="claude", api_key="sk-ant-test",
+                model="claude-haiku-4-5-20251001",
+            )
             provider = ClaudeProvider(config)
             provider.complete(
                 messages=[{"role": "user", "content": "test"}],
@@ -92,7 +100,8 @@ class TestOllamaProvider:
         mock_response.json.return_value = {"response": "Neutral analysis"}
         mock_response.raise_for_status = MagicMock()
 
-        with patch("signalstream.llm.providers.ollama.requests.post", return_value=mock_response) as mock_post:
+        ollama_post = "signalstream.llm.providers.ollama.requests.post"
+        with patch(ollama_post, return_value=mock_response) as mock_post:
             config = ProviderConfig(provider="ollama", model="gemma2:9b")
             provider = OllamaProvider(config)
             result = provider.complete(
@@ -135,7 +144,8 @@ class TestOpenAICompatProvider:
         }
         mock_response.raise_for_status = MagicMock()
 
-        with patch("signalstream.llm.providers.openai_compat.requests.post", return_value=mock_response) as mock_post:
+        oai_post = "signalstream.llm.providers.openai_compat.requests.post"
+        with patch(oai_post, return_value=mock_response) as mock_post:
             config = ProviderConfig(
                 provider="openai-compat",
                 api_key="sk-test",

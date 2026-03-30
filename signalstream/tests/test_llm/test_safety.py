@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from signalstream.llm.safety import validate_endpoint, SSRFError
+from signalstream.llm.safety import SSRFError, validate_endpoint
 
 
 class TestValidateEndpoint:

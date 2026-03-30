@@ -1,7 +1,6 @@
 """Tests for signalstream.db.repositories."""
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -9,7 +8,7 @@ import pytest
 
 from signalstream.db.engine import DatabaseEngine
 from signalstream.db.migrations import MigrationManager
-from signalstream.db.models import Job, JobStatistics, Post, Comment, SentimentResult
+from signalstream.db.models import Comment, Job, JobStatistics, Post, SentimentResult
 from signalstream.db.repositories import (
     JobRepository,
     PostRepository,

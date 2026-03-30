@@ -112,8 +112,10 @@ def parse_theme_response(response: str) -> dict[str, Any]:
         critiques_text = critiques_match.group(1)
         critiques = re.findall(r'[-\*]\s*(.+?)(?:\n|$)', critiques_text)
         for c in critiques:
-            freq_match = re.search(r'\((?:frequency:?\s*)?(frequent|occasional|rare)\)', c, re.IGNORECASE)
-            critique_text = re.sub(r'\s*\((?:frequency:?\s*)?(?:frequent|occasional|rare)\)', '', c).strip()
+            freq_pat = r'\((?:frequency:?\s*)?(frequent|occasional|rare)\)'
+            freq_match = re.search(freq_pat, c, re.IGNORECASE)
+            strip_pat = r'\s*\((?:frequency:?\s*)?(?:frequent|occasional|rare)\)'
+            critique_text = re.sub(strip_pat, '', c).strip()
             result["key_critiques"].append({
                 "critique": critique_text,
                 "frequency": freq_match.group(1).lower() if freq_match else "unknown",

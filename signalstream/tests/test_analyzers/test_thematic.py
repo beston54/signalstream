@@ -1,11 +1,8 @@
 """Tests for signalstream.analyzers.thematic — batch theme extraction with chunking."""
 from __future__ import annotations
 
-import random
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
-
-import pytest
 
 from signalstream.analyzers.thematic import (
     ThematicAnalyzer,
@@ -13,7 +10,6 @@ from signalstream.analyzers.thematic import (
     parse_theme_response,
 )
 from signalstream.db.models import Post, SentimentResult, Theme
-
 
 _GOOD_THEME_RESPONSE = """MAJOR_THEMES:
 1. Performance Improvements | Users praise significant speed gains in the new release

@@ -49,8 +49,9 @@ SARCASM_DETECTED: [true/false]
 Respond ONLY with these 8 lines. No other text."""
 
 
-THEMATIC_PROMPT_V1 = """You are an expert analyst identifying themes across social media discussions. \
-Analyze the provided post summaries and identify cross-cutting themes, patterns, and insights.
+THEMATIC_PROMPT_V1 = """You are an expert analyst identifying themes \
+across social media discussions. Analyze the provided post summaries \
+and identify cross-cutting themes, patterns, and insights.
 
 Respond in EXACTLY this format:
 

@@ -4,9 +4,9 @@ from __future__ import annotations
 import logging
 import sqlite3
 import threading
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +57,8 @@ class DatabaseEngine:
 
     @contextmanager
     def write(self) -> Generator[sqlite3.Connection, None, None]:
-        with self._write_lock:
-            with self.connect() as conn:
-                yield conn
+        with self._write_lock, self.connect() as conn:
+            yield conn
 
     def incremental_vacuum(self, pages: int = 100) -> None:
         with self.connect() as conn:

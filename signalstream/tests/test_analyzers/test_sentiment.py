@@ -4,12 +4,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
-import pytest
-
 from signalstream.analyzers.sentiment import SentimentAnalyzer, parse_sentiment_response
-from signalstream.db.models import Post, SentimentResult
+from signalstream.db.models import Post
 from signalstream.llm.providers.base import BaseProvider
-
 
 _GOOD_RESPONSE = """PRIMARY_EMOTION: enthusiastic
 SECONDARY_EMOTION: hopeful

@@ -73,7 +73,7 @@ def _resolve_and_check(host: str) -> list[ipaddress.IPv4Address | ipaddress.IPv6
         raise SSRFError(f"Cannot resolve hostname '{host}': {e}") from e
 
     addresses = []
-    for family, _type, _proto, _canonname, sockaddr in infos:
+    for _family, _type, _proto, _canonname, sockaddr in infos:
         addr = ipaddress.ip_address(sockaddr[0])
         addresses.append(addr)
 

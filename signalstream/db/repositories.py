@@ -5,6 +5,7 @@ Each repository takes a DatabaseEngine instance for testability.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import sqlite3
@@ -107,8 +108,10 @@ class JobRepository:
                 job.message, job.post_count, job.community_count,
                 job.pdf_path, job.analyzed_path, job.themes_path,
                 job.error,
-                job.created_at.isoformat() if isinstance(job.created_at, datetime) else job.created_at,
-                job.updated_at.isoformat() if isinstance(job.updated_at, datetime) else job.updated_at,
+                job.created_at.isoformat()
+                if isinstance(job.created_at, datetime) else job.created_at,
+                job.updated_at.isoformat()
+                if isinstance(job.updated_at, datetime) else job.updated_at,
                 job.completed_at,
                 job.preview_json,
             ))
@@ -210,7 +213,9 @@ class PostRepository:
                 post.upvote_ratio, post.flair,
                 1 if post.is_crosspost else 0,
                 post.crosspost_source,
-                post.timestamp.isoformat() if isinstance(post.timestamp, datetime) else post.timestamp,
+                post.timestamp.isoformat()
+                if isinstance(post.timestamp, datetime)
+                else post.timestamp,
                 datetime.now(timezone.utc).isoformat(),
             ))
             return cursor.lastrowid  # type: ignore[return-value]
@@ -252,10 +257,8 @@ class PostRepository:
     def _row_to_post(row: sqlite3.Row) -> Post:
         d = dict(row)
         phrase_matches: list[str] = []
-        try:
+        with contextlib.suppress(json.JSONDecodeError, TypeError):
             phrase_matches = json.loads(d.get("phrase_matches_json", "[]"))
-        except (json.JSONDecodeError, TypeError):
-            pass
 
         return Post(
             platform=d["platform"],
@@ -387,7 +390,9 @@ class StatisticsRepository:
                 stats.sentiment_neutral, stats.sentiment_mixed,
                 stats.dominant_emotion, stats.dominant_emotion_pct,
                 stats.themes_json, stats.statistics_json,
-                stats.created_at.isoformat() if isinstance(stats.created_at, datetime) else stats.created_at,
+                stats.created_at.isoformat()
+                if isinstance(stats.created_at, datetime)
+                else stats.created_at,
             ))
 
     def get(self, job_id: str) -> JobStatistics | None:

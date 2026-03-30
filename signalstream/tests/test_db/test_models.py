@@ -3,10 +3,13 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-import pytest
-
 from signalstream.db.models import (
-    Comment, Job, JobStatistics, Post, SentimentResult, Theme,
+    Comment,
+    Job,
+    JobStatistics,
+    Post,
+    SentimentResult,
+    Theme,
 )
 
 

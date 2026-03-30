@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import logging
 import random
-import time
 import threading
+import time
 from collections import deque
 
 import requests

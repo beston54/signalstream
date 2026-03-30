@@ -1,7 +1,6 @@
 """Tests for signalstream.db.engine."""
 from __future__ import annotations
 
-import sqlite3
 import threading
 from pathlib import Path
 
@@ -50,10 +49,9 @@ class TestDatabaseEngine:
         engine = DatabaseEngine(tmp_path / "test.db")
         with engine.connect() as conn:
             conn.execute("CREATE TABLE t (id INTEGER PRIMARY KEY)")
-        with pytest.raises(ValueError):
-            with engine.connect() as conn:
-                conn.execute("INSERT INTO t VALUES (1)")
-                raise ValueError("simulated failure")
+        with pytest.raises(ValueError), engine.connect() as conn:
+            conn.execute("INSERT INTO t VALUES (1)")
+            raise ValueError("simulated failure")
         with engine.connect() as conn:
             count = conn.execute("SELECT COUNT(*) FROM t").fetchone()[0]
             assert count == 0
