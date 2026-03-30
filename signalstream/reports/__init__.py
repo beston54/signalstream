@@ -1,1 +1,1 @@
-from __future__ import annotations
+"""Report generation: charts, content assembly, PDF rendering, JSON export."""
