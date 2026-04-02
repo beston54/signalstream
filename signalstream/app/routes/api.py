@@ -109,7 +109,7 @@ def export_pdf(job_id: str):
 
     # Check WeasyPrint availability
     try:
-        from signalstream.reports.renderer import PDF_AVAILABLE  # noqa: N811
+        from signalstream.reports.renderer import PDF_AVAILABLE
     except ImportError:
         PDF_AVAILABLE = False  # noqa: N806
 
