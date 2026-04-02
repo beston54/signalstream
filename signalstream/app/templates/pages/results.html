@@ -1,5 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Results - Signalstream</title></head>
-<body><h1>Results</h1><div id="results" data-job-id="{{ job_id }}"></div></body>
-</html>
+{% extends "layouts/base.html" %}
+
+{% block title %}Results — Signalstream{% endblock %}
+
+{% block head %}
+<script src="{{ url_for('static', filename='js/vendor/chart.min.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<section class="results-page" data-job-id="{{ job_id }}">
+
+    <!-- State: Loading -->
+    <div id="state-loading" class="state-container">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <p class="loading-text">Loading results...</p>
+    </div>
+
+    <!-- State: Error -->
+    <div id="state-error" class="state-container hidden">
+        {% include "components/error_banner.html" %}
+    </div>
+
+    <!-- State: Empty -->
+    <div id="state-empty" class="state-container hidden">
+        {% include "components/empty_state.html" %}
+    </div>
+
+    <!-- State: Populated -->
+    <div id="state-populated" class="state-container hidden">
+        <!-- Summary metrics row -->
+        <div class="metrics-row">
+            <div class="metric-card">
+                <span class="metric-label">Posts Analyzed</span>
+                <span id="metric-posts" class="metric-value">--</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Dominant Sentiment</span>
+                <span id="metric-sentiment" class="metric-value">--</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Dominant Emotion</span>
+                <span id="metric-emotion" class="metric-value">--</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Estimated Cost</span>
+                <span id="metric-cost" class="metric-value">--</span>
+            </div>
+        </div>
+
+        <!-- Charts row -->
+        <div class="charts-row">
+            {% include "components/chart_card.html" %}
+        </div>
+
+        <!-- Themes section -->
+        <section class="themes-section">
+            <h2>Top Themes</h2>
+            <div id="themes-list"></div>
+        </section>
+
+        <!-- Export buttons -->
+        <div class="export-actions">
+            <a id="export-json-btn" class="btn btn-secondary" download>Export JSON</a>
+            <a id="export-pdf-btn" class="btn btn-primary" download>Download PDF</a>
+            <button id="print-btn" class="btn btn-secondary" onclick="window.print()">
+                Print / Save as PDF
+            </button>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/results.js') }}"></script>
+{% endblock %}

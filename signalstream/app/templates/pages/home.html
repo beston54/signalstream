@@ -1,5 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Signalstream</title></head>
-<body><h1>Signalstream</h1></body>
-</html>
+{% extends "layouts/base.html" %}
+
+{% block title %}Signalstream — Sentiment Analysis{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>What do people think about...?</h1>
+    <p class="subtitle">Analyze public sentiment on any topic using AI</p>
+
+    <form id="topic-form" class="topic-form">
+        <div class="input-group">
+            <input
+                type="text"
+                id="topic-input"
+                name="topic"
+                placeholder="Enter a topic (e.g., 'remote work', 'electric vehicles')"
+                maxlength="200"
+                required
+                autofocus
+            >
+            <button type="submit" id="analyze-btn" class="btn btn-primary">
+                Get Started
+            </button>
+        </div>
+    </form>
+</section>
+
+<!-- Inline provider selector — shown when no provider configured -->
+<section id="provider-selector" class="provider-selector hidden">
+    {% include "components/provider_selector.html" %}
+</section>
+
+<!-- Dead-end prevention -->
+<section id="no-provider-help" class="no-provider-help hidden">
+    <h3>No LLM provider detected</h3>
+    <div class="help-options">
+        <div class="help-option">
+            <h4>Option 1: Install Ollama (free, local)</h4>
+            <code>curl -fsSL https://ollama.ai/install.sh | sh && ollama pull llama3.1:8b</code>
+        </div>
+        <div class="help-option">
+            <h4>Option 2: Use Claude API</h4>
+            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">
+                Get a Claude API key
+            </a>
+        </div>
+        <div class="help-option">
+            <button id="demo-btn" class="btn btn-secondary">
+                Try with demo data
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Recent analyses -->
+<section id="recent-analyses" class="recent-analyses hidden">
+    <h2>Recent Analyses</h2>
+    <div id="job-list"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}

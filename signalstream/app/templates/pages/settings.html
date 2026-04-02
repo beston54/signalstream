@@ -1,5 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Settings - Signalstream</title></head>
-<body><h1>Settings</h1></body>
-</html>
+{% extends "layouts/base.html" %}
+
+{% block title %}Settings — Signalstream{% endblock %}
+
+{% block content %}
+<section class="settings-page">
+    <h1>LLM Provider Settings</h1>
+    <p>Choose your AI provider for sentiment analysis. Keys are stored in your browser only.</p>
+
+    {% include "components/provider_selector.html" %}
+
+    <section class="data-management">
+        <h2>Data Management</h2>
+        <p>All analysis data is stored locally in SQLite.</p>
+        <button id="delete-all-btn" class="btn btn-danger">
+            Delete All Data
+        </button>
+    </section>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}

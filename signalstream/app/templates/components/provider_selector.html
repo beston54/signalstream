@@ -1,0 +1,61 @@
+<div class="provider-cards">
+    <!-- Ollama -->
+    <div class="provider-card" data-provider="ollama">
+        <div class="provider-header">
+            <h3>Ollama</h3>
+            <span class="badge badge-free">Free &amp; Local</span>
+            <span id="ollama-status" class="badge badge-detecting">Detecting...</span>
+        </div>
+        <p>Run AI models locally. No API key needed.</p>
+        <div class="provider-config">
+            <label for="ollama-model">Model:</label>
+            <select id="ollama-model">
+                <option value="">Detecting models...</option>
+            </select>
+        </div>
+        <button class="btn btn-primary provider-select-btn" data-provider="ollama">
+            Use Ollama
+        </button>
+    </div>
+
+    <!-- Claude -->
+    <div class="provider-card" data-provider="claude">
+        <div class="provider-header">
+            <h3>Claude</h3>
+            <span class="badge badge-quality">Best Quality</span>
+        </div>
+        <p>Anthropic's Claude for highest accuracy analysis.</p>
+        <div class="provider-config">
+            <label for="claude-key">API Key:</label>
+            <input type="password" id="claude-key" placeholder="sk-ant-...">
+            <label for="claude-model">Model:</label>
+            <select id="claude-model">
+                <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                <option value="claude-haiku-4-20250414">Claude Haiku 4</option>
+            </select>
+        </div>
+        <button class="btn btn-primary provider-select-btn" data-provider="claude">
+            Use Claude
+        </button>
+    </div>
+
+    <!-- OpenAI-compatible -->
+    <div class="provider-card" data-provider="openai-compat">
+        <div class="provider-header">
+            <h3>OpenAI-Compatible</h3>
+            <span class="badge badge-flexible">Flexible</span>
+        </div>
+        <p>OpenAI, Groq, Together, LM Studio, or any compatible endpoint.</p>
+        <div class="provider-config">
+            <label for="openai-endpoint">Endpoint:</label>
+            <input type="url" id="openai-endpoint" placeholder="https://api.openai.com/v1">
+            <label for="openai-key">API Key:</label>
+            <input type="password" id="openai-key" placeholder="sk-...">
+            <label for="openai-model">Model:</label>
+            <input type="text" id="openai-model" placeholder="gpt-4o">
+        </div>
+        <button class="btn btn-primary provider-select-btn" data-provider="openai-compat">
+            Use This Provider
+        </button>
+    </div>
+</div>
