@@ -98,12 +98,16 @@ def _extract_and_strip_keys() -> None:
 
     # Build ProviderConfig if a provider was specified
     if provider:
-        g.provider_config = ProviderConfig(
-            provider=provider,
-            api_key=api_key,
-            model=model or "",
-            endpoint=endpoint,
-        )
+        try:
+            g.provider_config = ProviderConfig(
+                provider=provider,
+                api_key=api_key,
+                model=model or "",
+                endpoint=endpoint,
+            )
+        except ValueError:
+            # Invalid provider — store None, let the route handle validation
+            g.provider_config = None
     else:
         g.provider_config = None
 
