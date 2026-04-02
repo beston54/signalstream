@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: signalstream
+    runtime: docker
+    region: frankfurt
+    plan: free
+    envVars:
+      - key: SIGNALSTREAM_HOST
+        value: "0.0.0.0"
+      - key: SIGNALSTREAM_PORT
+        value: "10000"

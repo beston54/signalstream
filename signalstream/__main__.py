@@ -67,11 +67,11 @@ def main() -> None:
     port = _find_open_port(host, port)
 
     # Database setup
-    from signalstream.db.engine import init_db
-    from signalstream.db.migrations import run_migrations
+    from signalstream.db.engine import DatabaseEngine
+    from signalstream.db.migrations import MigrationManager
 
-    init_db()
-    run_migrations()
+    engine = DatabaseEngine()
+    MigrationManager(engine).migrate()
 
     # Create app
     from signalstream.app import create_app
@@ -81,18 +81,19 @@ def main() -> None:
     # Graceful shutdown
     from signalstream.jobs.manager import JobManager
 
+    job_manager = JobManager()
+
     def shutdown_handler(signum, frame):
         logger.info("Shutting down gracefully...")
-        manager = JobManager.get_instance()
-        manager.shutdown()
+        job_manager.shutdown()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, shutdown_handler)
     signal.signal(signal.SIGTERM, shutdown_handler)
 
-    # Open browser
+    # Open browser (only when running locally, not in containers)
     url = f"http://{host}:{port}"
-    if not debug:
+    if host in ("127.0.0.1", "localhost"):
         threading.Thread(target=_open_browser, args=(url,), daemon=True).start()
 
     logger.info("Signalstream running at %s", url)
