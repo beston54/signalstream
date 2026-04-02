@@ -1,13 +1,29 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "signalstream"
 version = "0.1.0"
-description = "LLM-powered sentiment analysis engine"
+description = "Local-first sentiment analysis powered by LLMs"
+readme = "README.md"
 requires-python = ">=3.10"
-license = "MIT"
+license = {text = "MIT"}
+authors = [
+    {name = "Signalstream Contributors"},
+]
+keywords = ["sentiment-analysis", "llm", "nlp", "reddit", "flask"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+]
 dependencies = [
     "flask>=3.0",
     "requests>=2.31",
@@ -22,21 +38,39 @@ reddit-api = ["praw>=7.7"]
 claude = ["anthropic>=0.39"]
 dev = [
     "pytest>=8.0",
-    "pytest-cov",
-    "ruff",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+    "mypy>=1.8",
+    "pre-commit>=3.5",
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["signalstream*"]
+[project.urls]
+Homepage = "https://github.com/signalstream/signalstream"
+Documentation = "https://github.com/signalstream/signalstream#readme"
+Repository = "https://github.com/signalstream/signalstream"
+Issues = "https://github.com/signalstream/signalstream/issues"
 
-[tool.pytest.ini_options]
-testpaths = ["signalstream/tests"]
-pythonpath = ["."]
+[tool.setuptools.packages.find]
+include = ["signalstream*"]
 
 [tool.ruff]
 target-version = "py310"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["signalstream"]
+
+[tool.pytest.ini_options]
+testpaths = ["signalstream/tests"]
+pythonpath = ["."]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
