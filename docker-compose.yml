@@ -1,0 +1,29 @@
+# Signalstream with optional Ollama sidecar
+# Usage: docker compose up
+# With Ollama: docker compose --profile ollama up
+
+services:
+  app:
+    build: .
+    ports:
+      - "5001:5001"
+    volumes:
+      - signalstream-data:/app/data
+    environment:
+      - SIGNALSTREAM_HOST=0.0.0.0
+      - SIGNALSTREAM_PORT=5001
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles:
+      - ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  signalstream-data:
+  ollama-models:
