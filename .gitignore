@@ -1,35 +1,60 @@
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
 
 # Virtual environments
 venv/
 .venv/
+env/
 
-# Local config / secrets
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+data/
+
+# Logs
+*.log
+logs/
+
+# Reports output
+reports_output/
+review_outputs/
+
+# Environment and secrets
 .env
 .env.*
-config.local.yaml
 config.yaml
+!config.example.yaml
 .hash_salt
 .email_key
 
-# Sensitive data files
-data/emails.json
-data/job_history.json
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
 
-# Generated pipeline outputs
-logs/*.log
-reports/*.pdf
-data/raw/*.json
-data/analyzed/*.json
-assets/images/cache/*
-assets/images/cache_manifest.json
-
-# Dev tooling (not part of the deliverable)
-orchestrator.py
-review_outputs/
-
-# macOS
-.DS_Store
+# Misc
+*.bak
+*.tmp
