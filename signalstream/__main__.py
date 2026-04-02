@@ -81,7 +81,7 @@ def main() -> None:
     # Graceful shutdown
     from signalstream.jobs.manager import JobManager
 
-    job_manager = JobManager()
+    job_manager = JobManager(db=engine)
 
     def shutdown_handler(signum, frame):
         logger.info("Shutting down gracefully...")
